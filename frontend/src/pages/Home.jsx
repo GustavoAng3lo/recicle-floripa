@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, MapPin, Calendar, Award, Recycle, ChevronRight } from 'lucide-react';
+import { LogOut, MapPin, Calendar, Award, Recycle, ChevronRight, Settings } from 'lucide-react';
 import logoRecicle from '../assets/png.png';
 
 const Home = () => {
@@ -20,7 +20,7 @@ const Home = () => {
       paddingBottom: '40px'
     }}>
       
-      {/* NAVBAR SUPERIOR - ESTILO DESKTOP */}
+      {/* NAVBAR SUPERIOR */}
       <nav style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
@@ -31,7 +31,6 @@ const Home = () => {
         boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          {/* Logo com fundo branco para destaque sobre o verde */}
           <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '5px', display: 'flex' }}>
             <img src={logoRecicle} alt="Logo" style={{ width: '40px', height: 'auto' }} />
           </div>
@@ -39,9 +38,15 @@ const Home = () => {
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: '700' }}>{nomeUsuario}</p>
-            <p style={{ margin: 0, fontSize: '0.75rem', opacity: 0.8 }}>Eco-Cidadão</p>
+          <div 
+            style={{ textAlign: 'right', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}
+            onClick={() => navigate('/configuracoes')}
+          >
+            <div>
+              <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: '700' }}>{nomeUsuario}</p>
+              <p style={{ margin: 0, fontSize: '0.75rem', opacity: 0.8 }}>Eco-Cidadão</p>
+            </div>
+            <Settings size={20} style={{ opacity: 0.9 }} />
           </div>
           <button onClick={handleLogout} style={logoutButtonStyle}>
             <LogOut size={18} /> Sair
@@ -49,7 +54,7 @@ const Home = () => {
         </div>
       </nav>
 
-      {/* SEÇÃO HERO (BANNER VERDE LARGO) */}
+      {/* SEÇÃO HERO */}
       <section style={{ 
         background: 'linear-gradient(135deg, #2e7d32 0%, #64bc3c 100%)', 
         padding: '60px 5%', 
@@ -61,12 +66,11 @@ const Home = () => {
         <p style={{ fontSize: '1.3rem', opacity: 0.9, marginBottom: '30px' }}>
           Sua atitude muda o mundo, comece pelo lixo.
         </p>
-        <button style={mapButtonStyle}>Mapa</button>
+        <button style={mapButtonStyle}>Mapa de Pontos</button>
       </section>
 
-      {/* CONTEÚDO EM GRID (LAYOUT COMPUTADOR) */}
+      {/* CONTEÚDO EM GRID */}
       <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
-        
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '30px', alignItems: 'start' }}>
           
           {/* COLUNA ESQUERDA: AÇÕES E HISTÓRICO */}
@@ -91,14 +95,14 @@ const Home = () => {
               />
             </div>
 
-            <h3 style={sectionTitleStyle}>Histórico de Coletas (SQL)</h3>
+            <h3 style={sectionTitleStyle}>Histórico de Coletas</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <HistoryCard status="Concluída" data="13/11/2025" local="Rua das Flores" />
-              <HistoryCard status="Concluída" data="10/11/2025" local="Av. Beira Mar" />
+              <HistoryCard status="Concluída" data="13/11/2025" local="Trindade, Floripa" />
+              <HistoryCard status="Concluída" data="10/11/2025" local="Centro, Floripa" />
             </div>
           </div>
 
-          {/* COLUNA DIREITA: STATUS DO USUÁRIO */}
+          {/* COLUNA DIREITA: STATUS E LINK PARA CONFIGURAÇÕES */}
           <aside style={statsBoxStyle}>
             <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '20px' }}>Olá, {nomeUsuario}! 👋</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -111,18 +115,13 @@ const Home = () => {
                 <strong style={{ fontSize: '1.8rem' }}>#12</strong>
               </div>
             </div>
-            <button style={{ 
-              marginTop: '20px', 
-              width: '100%', 
-              padding: '12px', 
-              borderRadius: '12px', 
-              border: 'none', 
-              backgroundColor: 'white', 
-              color: '#2e7d32', 
-              fontWeight: '800', 
-              cursor: 'pointer' 
-            }}>
-              Ver detalhes do perfil
+            
+            {/* AQUI ESTÁ A ALTERAÇÃO PRINCIPAL */}
+            <button 
+              onClick={() => navigate('/configuracoes')}
+              style={configButtonStyle}
+            >
+              Configurações da Conta
             </button>
           </aside>
 
@@ -132,7 +131,7 @@ const Home = () => {
   );
 };
 
-// COMPONENTES AUXILIARES DE ESTILO
+// COMPONENTES AUXILIARES
 const ActionCard = ({ icon, title, desc, onClick }) => (
   <div style={actionCardStyle} onClick={onClick}>
     <div style={iconBoxStyle}>{icon}</div>
@@ -154,103 +153,19 @@ const HistoryCard = ({ status, data, local }) => (
       </div>
       <p style={{ margin: '4px 0 0 0', color: '#555', fontSize: '0.95rem', fontWeight: '500' }}>{local}</p>
     </div>
-    <button style={detailsBtnStyle}>Detalhes</button>
   </div>
 );
 
-// OBJETOS DE ESTILO (CSS-IN-JS)
-const logoutButtonStyle = {
-  backgroundColor: 'rgba(255,255,255,0.15)',
-  border: '1px solid rgba(255,255,255,0.3)',
-  color: 'white',
-  padding: '8px 16px',
-  borderRadius: '10px',
-  fontWeight: '700',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-  transition: '0.2s'
-};
-
-const mapButtonStyle = {
-  backgroundColor: 'white',
-  color: '#2e7d32',
-  border: 'none',
-  padding: '18px 70px',
-  borderRadius: '16px',
-  fontWeight: '900',
-  fontSize: '1.2rem',
-  cursor: 'pointer',
-  boxShadow: '0 6px 20px rgba(0,0,0,0.15)',
-  transition: '0.3s'
-};
-
-const sectionTitleStyle = { color: '#333', fontWeight: '900', marginBottom: '25px', fontSize: '1.3rem', letterSpacing: '-0.5px' };
-
-const actionCardStyle = {
-  backgroundColor: 'white',
-  padding: '25px',
-  borderRadius: '24px',
-  border: '1px solid #eee',
-  textAlign: 'left',
-  cursor: 'pointer',
-  transition: '0.3s',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
-};
-
-const iconBoxStyle = {
-  backgroundColor: '#f0f7f0',
-  width: '45px',
-  height: '45px',
-  borderRadius: '12px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center'
-};
-
-const historyCardStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '20px',
-  padding: '20px',
-  backgroundColor: 'white',
-  borderRadius: '24px',
-  border: '1px solid #eee',
-  transition: '0.3s'
-};
-
+// ESTILOS (OBJETOS)
+const logoutButtonStyle = { backgroundColor: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '8px 16px', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' };
+const mapButtonStyle = { backgroundColor: 'white', color: '#2e7d32', border: 'none', padding: '18px 70px', borderRadius: '16px', fontWeight: '900', fontSize: '1.2rem', cursor: 'pointer', boxShadow: '0 6px 20px rgba(0,0,0,0.15)' };
+const sectionTitleStyle = { color: '#333', fontWeight: '900', marginBottom: '25px', fontSize: '1.3rem' };
+const actionCardStyle = { backgroundColor: 'white', padding: '25px', borderRadius: '24px', border: '1px solid #eee', textAlign: 'left', cursor: 'pointer', transition: '0.3s' };
+const iconBoxStyle = { backgroundColor: '#f0f7f0', width: '45px', height: '45px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+const historyCardStyle = { display: 'flex', alignItems: 'center', gap: '20px', padding: '20px', backgroundColor: 'white', borderRadius: '24px', border: '1px solid #eee' };
 const recycleCircleStyle = { backgroundColor: '#f0f7f0', padding: '12px', borderRadius: '16px' };
-
-const detailsBtnStyle = {
-  backgroundColor: '#f0f2f0',
-  border: 'none',
-  padding: '10px 20px',
-  borderRadius: '10px',
-  fontWeight: '800',
-  fontSize: '0.85rem',
-  color: '#444',
-  cursor: 'pointer'
-};
-
-const statsBoxStyle = {
-  background: 'linear-gradient(135deg, #2e7d32 0%, #64bc3c 100%)',
-  padding: '35px',
-  borderRadius: '30px',
-  color: 'white',
-  boxShadow: '0 15px 30px rgba(46, 125, 50, 0.2)',
-  position: 'sticky',
-  top: '20px'
-};
-
-const statItemStyle = {
-  backgroundColor: 'rgba(255,255,255,0.15)',
-  padding: '20px',
-  borderRadius: '20px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '8px',
-  backdropFilter: 'blur(5px)'
-};
+const statsBoxStyle = { background: 'linear-gradient(135deg, #2e7d32 0%, #64bc3c 100%)', padding: '35px', borderRadius: '30px', color: 'white', position: 'sticky', top: '20px' };
+const statItemStyle = { backgroundColor: 'rgba(255,255,255,0.15)', padding: '20px', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' };
+const configButtonStyle = { marginTop: '10px', width: '100%', padding: '15px', borderRadius: '12px', border: 'none', backgroundColor: 'white', color: '#2e7d32', fontWeight: '800', cursor: 'pointer', fontSize: '0.9rem' };
 
 export default Home;
