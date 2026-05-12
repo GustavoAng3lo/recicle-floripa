@@ -1,16 +1,26 @@
-/* Estilos Globais baseados no Layout */
+/* Variáveis de Cores e Estilos Globais */
 :root {
-  --primary-green: #4CAF50; /* Verde principal do Recicle */
-  --dark-green: #388E3C;
+  --primary-green: #64bc3c; /* Verde vibrante do layout mobile */
+  --dark-green: #4e9a2d;
   --white: #ffffff;
-  --gray: #757575;
+  --gray-text: #757575;
+  --light-gray: #f5f5f5;
+  --border-blue: #2196F3; /* Cor da borda de destaque no endereço */
 }
 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* --- TELA DE LOGIN E CADASTRO --- */
 .login-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
+  padding: 40px 20px;
   min-height: 100vh;
   background-color: var(--white);
 }
@@ -18,12 +28,8 @@
 .brand-title {
   color: var(--primary-green);
   font-size: 2.5rem;
-  margin-bottom: 10px;
-}
-
-.hero-logo {
-  width: 150px;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
+  font-weight: bold;
 }
 
 .login-form {
@@ -33,51 +39,251 @@
 
 .login-instruction {
   font-size: 0.9rem;
-  color: var(--gray);
+  color: var(--gray-text);
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 .input-group {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
   display: flex;
   flex-direction: column;
 }
 
 .input-group label {
-  font-weight: bold;
-  font-size: 0.85rem;
-  margin-bottom: 5px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
 }
 
 .input-group input {
-  padding: 12px;
+  padding: 14px;
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-radius: 8px;
   outline-color: var(--primary-green);
-}
-
-.forgot-password {
-  font-size: 0.75rem;
-  color: var(--gray);
-  text-align: right;
-  margin-top: 5px;
-  text-decoration: none;
+  font-size: 1rem;
 }
 
 .btn-primary {
   width: 100%;
-  padding: 15px;
+  padding: 16px;
   background-color: var(--primary-green);
   color: white;
   border: none;
-  border-radius: 5px;
-  font-size: 1rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
   font-weight: bold;
   cursor: pointer;
-  margin-top: 20px;
+  margin-top: 10px;
+  transition: background 0.3s;
 }
 
 .btn-primary:hover {
   background-color: var(--dark-green);
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--gray-text);
+  margin-top: 20px;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+/* --- TELA INICIAL (MOBILE LAYOUT) --- */
+.home-mobile-container {
+  background-color: var(--white);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header-green {
+  background-color: var(--primary-green);
+  padding: 20px 20px 40px 20px;
+  text-align: center;
+  color: white;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.brand-text {
+  font-size: 1.6rem;
+  font-weight: 500;
+}
+
+/* Caixa de Endereço */
+.address-box {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  border: 2px solid var(--border-blue); /* Destaque azul conforme a imagem */
+}
+
+.address-info {
+  text-align: left;
+  color: #333;
+}
+
+.address-label {
+  font-size: 0.75rem;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.address-details {
+  display: flex;
+  align-items: center;
+  font-size: 0.7rem;
+  gap: 6px;
+  line-height: 1.2;
+}
+
+.address-action {
+  background-color: var(--primary-green);
+  border-radius: 50%;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hero Section na Home */
+.hero-section h2 {
+  font-size: 2rem;
+  font-weight: normal;
+  margin-bottom: 15px;
+}
+
+.hero-section p {
+  font-size: 1.2rem;
+  margin-bottom: 25px;
+  padding: 0 30px;
+  line-height: 1.4;
+}
+
+.btn-mapa-white {
+  background: white;
+  color: var(--primary-green);
+  border: none;
+  padding: 12px 50px;
+  border-radius: 12px;
+  font-size: 1.6rem;
+  font-weight: 400;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Seção de Histórico */
+.history-section {
+  padding: 20px;
+  margin-bottom: 80px; /* Espaço para a navegação inferior */
+}
+
+.history-title {
+  text-align: center;
+  font-size: 1rem;
+  color: #333;
+  font-weight: normal;
+  margin-bottom: 20px;
+}
+
+.history-card {
+  border: 1px solid #ccc;
+  border-radius: 25px;
+  padding: 20px;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  background-color: #fcfcfc;
+}
+
+.recycle-symbol {
+  font-size: 2.5rem;
+}
+
+.card-info {
+  flex: 1;
+}
+
+.card-status-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.status-text {
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.date-text {
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.location-text {
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.btn-detalhes {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  background: #e0e0e0;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* Navegação Inferior (Footer) */
+.footer-nav {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  padding: 10px 5px;
+  background: white;
+  border-top: 1px solid #eee;
+  z-index: 100;
+}
+
+.nav-item-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #333;
+  flex: 1;
+  cursor: pointer;
+}
+
+.nav-item-box span {
+  margin-top: 4px;
+}
+
+.nav-item-box.plus {
+  justify-content: center;
+  padding-bottom: 5px;
 }

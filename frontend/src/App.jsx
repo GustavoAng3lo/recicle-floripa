@@ -1,17 +1,18 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import Home from './pages/Home';
+import Cadastro from './pages/Cadastro';
+import Coleta from './pages/Coleta'; // Importe necessário para a rota funcionar
 import './App.css';
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Define o Login como a página inicial (caminho "/") */}
         <Route path="/" element={<Login />} />
-        
-        {/* Rota para a Home após o login bem-sucedido */}
+        <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/processo-coleta" element={<Coleta />} />
       </Routes>
     </Router>
   );
