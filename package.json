@@ -1,0 +1,21 @@
+{
+  "name": "recicle-floripa",
+  "version": "1.0.0",
+  "description": "[cite_start]O **Recicle Floripa** é um aplicativo mobile desenvolvido para otimizar o descarte de resíduos sólidos em Florianópolis/SC[cite: 10]. [cite_start]O sistema permite que moradores e turistas identifiquem corretamente os materiais e localizem pontos de coleta próximos, auxiliando na gestão ambiental da cidade em parceria com órgãos como a COMCAP[cite: 13, 21].",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GustavoAng3lo/recicle-floripa.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/GustavoAng3lo/recicle-floripa/issues"
+  },
+  "homepage": "https://github.com/GustavoAng3lo/recicle-floripa#readme"
+}
