@@ -1,6 +1,6 @@
 # Recicle Floripa
 
-[cite_start]O **Recicle Floripa** é um aplicativo mobile desenvolvido para otimizar o descarte de resíduos sólidos em Florianópolis/SC[cite: 10]. [cite_start]O sistema permite que moradores e turistas identifiquem corretamente os materiais e localizem pontos de coleta próximos, auxiliando na gestão ambiental da cidade em parceria com órgãos como a COMCAP[cite: 13, 21].
+[cite_start]O **Recicle Floripa** é um aplicativo mobile desenvolvido para otimizar o descarte de resíduos sólidos em Florianópolis/SC[cite: 10]. [cite_start]O sistema permite que moradores e turistas identifiquem corretamente os materiais e localizem pontos de coleta próximos
 
 ---
 
