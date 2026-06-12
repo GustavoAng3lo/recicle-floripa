@@ -6,30 +6,21 @@ import logoRecicle from '../assets/png.png';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [erro, setErro] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    
+    setErro('');
     try {
-      // Fazendo a chamada para o seu servidor backend na porta 3000
-      const response = await axios.post('http://localhost:3000/login', { 
-        email, 
-        senha 
-      });
-
+      const response = await axios.post('http://localhost:3000/login', { email, senha });
       if (response.data.user) {
-        // Guardando os dados reais vindos do seu SQL no navegador
         localStorage.setItem('usuario_id', response.data.user.id);
         localStorage.setItem('usuarioNome', response.data.user.nome);
-        
-        console.log('Login realizado com sucesso!');
         navigate('/home');
       }
     } catch (error) {
-      console.error('Erro ao logar:', error);
-      // Se o backend estiver offline ou a senha estiver errada, ele cai aqui
-      alert(error.response?.data?.error || "Servidor offline ou dados incorretos!");
+      setErro(error.response?.data?.error || 'Servidor offline ou dados incorretos.');
     }
   };
 
@@ -121,13 +112,19 @@ const Login = () => {
             />
           </div>
 
-          <button type="submit" style={{ 
-            padding: '14px', 
-            backgroundColor: '#64bc3c', 
-            color: 'white', 
-            border: 'none', 
-            borderRadius: '10px', 
-            fontWeight: '700', 
+          {erro && (
+            <p style={{ color: '#d32f2f', backgroundColor: '#fff5f5', border: '1px solid #fc8181', borderRadius: '8px', padding: '10px', fontSize: '0.85rem', margin: 0 }}>
+              {erro}
+            </p>
+          )}
+
+          <button type="submit" style={{
+            padding: '14px',
+            backgroundColor: '#64bc3c',
+            color: 'white',
+            border: 'none',
+            borderRadius: '10px',
+            fontWeight: '700',
             fontSize: '1rem',
             cursor: 'pointer',
             marginTop: '10px',

@@ -5,6 +5,7 @@ import Cadastro from './pages/Cadastro';
 import Home from './pages/Home';
 import Coleta from './pages/Coleta';
 import Configuracoes from './pages/Configuracoes';
+import Servicos from './pages/servicos';
 import './App.css';
 
 function App() {
@@ -29,9 +30,13 @@ function App() {
           path="/coleta" 
           element={isAuthenticated() ? <Coleta /> : <Navigate to="/" />} 
         />
-        <Route 
-          path="/configuracoes" 
-          element={isAuthenticated() ? <Configuracoes /> : <Navigate to="/" />} 
+        <Route
+          path="/configuracoes"
+          element={isAuthenticated() ? <Configuracoes /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/servicos"
+          element={isAuthenticated() ? <Servicos /> : <Navigate to="/" />}
         />
 
         {/* Redirecionamento de rotas inexistentes */}

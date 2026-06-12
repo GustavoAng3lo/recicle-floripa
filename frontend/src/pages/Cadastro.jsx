@@ -13,6 +13,7 @@ const Cadastro = () => {
   const [cpf, setCpf] = useState('');
   const [dataNasc, setDataNasc] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [erro, setErro] = useState('');
 
   const regras = {
     tamanho: senha.length >= 6 && senha.length <= 8,
@@ -23,29 +24,20 @@ const Cadastro = () => {
   // 2. Função agora é ASYNC para falar com o banco
   const handleCadastro = async (e) => {
     e.preventDefault();
+    setErro('');
 
-    // Validação de segurança antes de enviar
-    if (regras.tamanho && regras.maiusculoMinusculo && regras.letraEspecial) {
-      try {
-        // 3. Chamada real para o seu backend
-        const response = await axios.post('http://localhost:3000/usuarios', {
-          nome,
-          email,
-          senha,
-          cpf
-        });
+    if (!regras.tamanho || !regras.maiusculoMinusculo || !regras.letraEspecial) {
+      setErro('Por favor, cumpra todos os requisitos da senha.');
+      return;
+    }
 
-        if (response.status === 201) {
-          alert('✅ Usuário cadastrado no banco de dados com sucesso!');
-          navigate('/'); // Volta para o Login
-        }
-      } catch (error) {
-        console.error("Erro no cadastro:", error);
-        // Exibe o erro real vindo do Postgres (ex: CPF duplicado)
-        alert(error.response?.data?.error || 'Erro ao conectar com o servidor.');
+    try {
+      const response = await axios.post('http://localhost:3000/usuarios', { nome, email, senha, cpf });
+      if (response.status === 201) {
+        navigate('/');
       }
-    } else {
-      alert('Por favor, cumpra todos os requisitos da senha.');
+    } catch (error) {
+      setErro(error.response?.data?.error || 'Erro ao conectar com o servidor.');
     }
   };
 
@@ -201,6 +193,12 @@ const Cadastro = () => {
               <span>Ao se cadastrar, você concorda com os <b style={linkStyle}>termos</b> e a <b style={linkStyle}>Privacidade</b>.</span>
             </label>
           </div>
+
+          {erro && (
+            <p style={{ color: '#d32f2f', backgroundColor: '#fff5f5', border: '1px solid #fc8181', borderRadius: '8px', padding: '10px', fontSize: '0.85rem', margin: 0 }}>
+              {erro}
+            </p>
+          )}
 
           <button type="submit" style={buttonStyle}>CADASTRAR</button>
         </form>

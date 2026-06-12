@@ -113,8 +113,8 @@ const Home = () => {
                 <strong style={{ fontSize: '1.8rem' }}>{pontos} pts</strong>
               </div>
               <div style={statItemStyle}>
-                <span style={{ fontSize: '0.8rem', opacity: 0.9, fontWeight: '700' }}>RANKING FLORIPA</span>
-                <strong style={{ fontSize: '1.8rem' }}>#12</strong>
+                <span style={{ fontSize: '0.8rem', opacity: 0.9, fontWeight: '700' }}>COLETAS REALIZADAS</span>
+                <strong style={{ fontSize: '1.8rem' }}>{coletas.length}</strong>
               </div>
             </div>
             <button onClick={() => navigate('/configuracoes')} style={configButtonStyle}>Configurações da Conta</button>

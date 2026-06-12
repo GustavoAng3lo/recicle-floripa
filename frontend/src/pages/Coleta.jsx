@@ -7,7 +7,7 @@ const Coleta = () => {
   const [descricao, setDescricao] = useState('');
   const [tipoReciclagem, setTipoReciclagem] = useState('');
   const [quantidade, setQuantidade] = useState(1);
-  const [localizacao, setLocalizacao] = useState('Gaivotas, Florianópolis');
+  const [localizacao, setLocalizacao] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,8 +45,8 @@ const Coleta = () => {
     try {
       const usuario_id = localStorage.getItem('usuario_id');
       await axios.post('http://localhost:3000/residuos', {
-        categoria: descricao,
-        tipo_reciclagem: tipoReciclagem,
+        categoria: tipoReciclagem,
+        tipo_reciclagem: descricao,
         quantidade: Number(quantidade),
         localizacao,
         usuario_id: Number(usuario_id)
