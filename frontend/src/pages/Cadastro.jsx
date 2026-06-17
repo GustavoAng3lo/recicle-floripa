@@ -1,34 +1,43 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios'; // 1. Importação necessária
 import { User, Mail, Lock, Eye, EyeOff, CreditCard, Calendar } from 'lucide-react';
 import logoRecicle from '../assets/png.png';
 
 const Cadastro = () => {
   const navigate = useNavigate();
   
-  // Estados para os campos
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [cpf, setCpf] = useState('');
   const [dataNasc, setDataNasc] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [erro, setErro] = useState('');
 
-  // Lógica de validação da senha em tempo real
   const regras = {
     tamanho: senha.length >= 6 && senha.length <= 8,
     maiusculoMinusculo: /[a-z]/.test(senha) && /[A-Z]/.test(senha),
     letraEspecial: /[a-zA-Z]/.test(senha) && /[!@#$%^&*(),.?":{}|<>]/.test(senha),
   };
 
-  const handleCadastro = (e) => {
+  // 2. Função agora é ASYNC para falar com o banco
+  const handleCadastro = async (e) => {
     e.preventDefault();
-    // Verifica se todos os requisitos da senha foram atendidos antes de prosseguir
-    if (regras.tamanho && regras.maiusculoMinusculo && regras.letraEspecial) {
-      alert('Cadastro realizado com sucesso! (Modo Simulação)');
-      navigate('/');
-    } else {
-      alert('Por favor, cumpra todos os requisitos da senha.');
+    setErro('');
+
+    if (!regras.tamanho || !regras.maiusculoMinusculo || !regras.letraEspecial) {
+      setErro('Por favor, cumpra todos os requisitos da senha.');
+      return;
+    }
+
+    try {
+      const response = await axios.post('http://localhost:3000/usuarios', { nome, email, senha, cpf });
+      if (response.status === 201) {
+        navigate('/');
+      }
+    } catch (error) {
+      setErro(error.response?.data?.error || 'Erro ao conectar com o servidor.');
     }
   };
 
@@ -44,7 +53,7 @@ const Cadastro = () => {
       padding: '40px 20px'
     }}>
       
-      {/* HEADER: NOME E LOGO IGUAL AO LOGIN */}
+      {/* HEADER */}
       <div style={{ textAlign: 'center', marginBottom: '30px' }}>
         <h1 style={{ 
           color: '#2e7d32', 
@@ -115,7 +124,7 @@ const Cadastro = () => {
             </div>
           </div>
 
-          {/* SENHA COM VALIDAÇÃO DINÂMICA */}
+          {/* SENHA */}
           <div style={inputContainerStyle}>
             <label style={labelStyle}>Senha</label>
             <div style={inputWrapperStyle}>
@@ -133,7 +142,6 @@ const Cadastro = () => {
               </div>
             </div>
             
-            {/* INSTRUÇÕES DE SENHA (DINÂMICO) */}
             <div style={{ display: 'flex', flexDirection: 'column', fontSize: '0.75rem', marginTop: '6px', gap: '2px' }}>
               <span style={{ color: senha === '' ? '#777' : (regras.tamanho ? '#2e7d32' : '#d32f2f'), fontWeight: '600' }}>
                 {regras.tamanho ? '✓' : '•'} Deve ter entre 6 a 8 caracteres
@@ -179,17 +187,18 @@ const Cadastro = () => {
             </div>
           </div>
 
-          {/* CHECKBOXES DE TERMOS */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
             <label style={checkboxLabelStyle}>
               <input type="checkbox" style={checkboxStyle} required />
-              <span>Ao se cadastrar, você concorda com os <b style={linkStyle}>termos e Condições de Uso</b>, e a <b style={linkStyle}>Política de Privacidade</b> do RECICLE.</span>
-            </label>
-            <label style={checkboxLabelStyle}>
-              <input type="checkbox" style={checkboxStyle} />
-              <span>Quero receber comunicação, promoção e marketing por e-mail.</span>
+              <span>Ao se cadastrar, você concorda com os <b style={linkStyle}>termos</b> e a <b style={linkStyle}>Privacidade</b>.</span>
             </label>
           </div>
+
+          {erro && (
+            <p style={{ color: '#d32f2f', backgroundColor: '#fff5f5', border: '1px solid #fc8181', borderRadius: '8px', padding: '10px', fontSize: '0.85rem', margin: 0 }}>
+              {erro}
+            </p>
+          )}
 
           <button type="submit" style={buttonStyle}>CADASTRAR</button>
         </form>
@@ -202,7 +211,7 @@ const Cadastro = () => {
   );
 };
 
-// ESTILOS (OBJETOS CSS)
+// ESTILOS (MANTIDOS)
 const inputContainerStyle = { display: 'flex', flexDirection: 'column', gap: '4px' };
 const labelStyle = { fontSize: '0.85rem', fontWeight: '700', color: '#444' };
 const inputWrapperStyle = { display: 'flex', alignItems: 'center', border: '1px solid #ddd', borderRadius: '12px', padding: '0 12px', backgroundColor: '#fff', transition: '0.3s' };
@@ -210,7 +219,7 @@ const iconStyle = { marginRight: '12px' };
 const inputStyle = { border: 'none', outline: 'none', padding: '14px 0', width: '100%', fontSize: '0.95rem', fontFamily: '"Inter", sans-serif', color: '#333' };
 const checkboxLabelStyle = { display: 'flex', gap: '10px', fontSize: '0.78rem', color: '#555', alignItems: 'flex-start', cursor: 'pointer', lineHeight: '1.4' };
 const checkboxStyle = { marginTop: '3px', cursor: 'pointer' };
-const buttonStyle = { backgroundColor: '#64bc3c', color: 'white', border: 'none', padding: '16px', borderRadius: '12px', fontWeight: '800', fontSize: '1rem', cursor: 'pointer', marginTop: '10px', boxShadow: '0 4px 12px rgba(100, 188, 60, 0.2)' };
+const buttonStyle = { backgroundColor: '#64bc3c', color: 'white', border: 'none', padding: '16px', borderRadius: '12px', fontWeight: '800', fontSize: '1rem', cursor: 'pointer', marginTop: '10px' };
 const linkStyle = { color: '#2e7d32', fontWeight: '800', cursor: 'pointer', textDecoration: 'none' };
 
 export default Cadastro;
