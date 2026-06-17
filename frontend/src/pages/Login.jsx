@@ -1,38 +1,49 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import logoRecicle from '../assets/png.png';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [erro, setErro] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    localStorage.setItem('usuarioNome', 'Luis Gustavo');
-    navigate('/home');
+    setErro('');
+    setLoading(true);
+
+    try {
+      const response = await axios.post('http://localhost:3000/login', { email, senha });
+      localStorage.setItem('loginData', JSON.stringify(response.data));
+      navigate('/home');
+    } catch (err) {
+      setErro('E-mail ou senha incorretos.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="login-container" style={{ 
+    <div style={{ 
       display: 'flex', 
       flexDirection: 'column', 
       alignItems: 'center', 
       justifyContent: 'center', 
       minHeight: '100vh', 
       backgroundColor: '#f0f4f0',
-      fontFamily: '"Inter", sans-serif' // Aplicando Inter em tudo
+      fontFamily: '"Inter", sans-serif'
     }}>
       
-      {/* SEÇÃO DA LOGO ATUALIZADA */}
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
         <h1 style={{ 
           color: '#2e7d32', 
           marginBottom: '15px', 
-          fontWeight: '900', // Bem negrito como a Inter pede
-          fontSize: '3.2rem', // Um pouco maior
-          letterSpacing: '-1px', // Inter fica linda com espaçamento negativo
-          fontFamily: '"Inter", sans-serif'
+          fontWeight: '900',
+          fontSize: '3.2rem',
+          letterSpacing: '-1px',
         }}>
           RECICLE
         </h1>
@@ -40,7 +51,7 @@ const Login = () => {
           src={logoRecicle} 
           alt="Mascote Recicle" 
           style={{ 
-            width: '200px', // Aumentado conforme solicitado
+            width: '200px',
             height: 'auto', 
             borderRadius: '24px',
             backgroundColor: 'white',
@@ -50,7 +61,7 @@ const Login = () => {
         />
       </div>
 
-      <div className="login-box" style={{ 
+      <div style={{ 
         background: 'white', 
         padding: '35px', 
         borderRadius: '24px', 
@@ -61,6 +72,10 @@ const Login = () => {
       }}>
         <h2 style={{ color: '#333', marginBottom: '20px', fontWeight: '700' }}>Entrar</h2>
         
+        {erro && (
+          <p style={{ color: 'red', fontSize: '0.85rem', marginBottom: '12px' }}>{erro}</p>
+        )}
+
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           <div style={{ textAlign: 'left' }}>
             <label style={{ display: 'block', marginBottom: '6px', color: '#555', fontSize: '0.85rem', fontWeight: '600' }}>E-mail</label>
@@ -69,6 +84,7 @@ const Login = () => {
               placeholder="seuemail@exemplo.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
               style={{ 
                 width: '100%', 
                 padding: '12px', 
@@ -76,7 +92,6 @@ const Login = () => {
                 border: '1px solid #ddd', 
                 boxSizing: 'border-box', 
                 outline: 'none',
-                fontFamily: '"Inter", sans-serif'
               }}
             />
           </div>
@@ -88,6 +103,7 @@ const Login = () => {
               placeholder="********"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
+              required
               style={{ 
                 width: '100%', 
                 padding: '12px', 
@@ -95,29 +111,37 @@ const Login = () => {
                 border: '1px solid #ddd', 
                 boxSizing: 'border-box', 
                 outline: 'none',
-                fontFamily: '"Inter", sans-serif'
               }}
             />
           </div>
 
-          <button type="submit" style={{ 
-            padding: '14px', 
-            backgroundColor: '#64bc3c', 
-            color: 'white', 
-            border: 'none', 
-            borderRadius: '10px', 
-            fontWeight: '700', 
-            fontSize: '1rem',
-            cursor: 'pointer',
-            marginTop: '10px',
-            fontFamily: '"Inter", sans-serif'
-          }}>
-            ENTRAR
+          <button 
+            type="submit" 
+            disabled={loading}
+            style={{ 
+              padding: '14px', 
+              backgroundColor: loading ? '#a5d6a7' : '#64bc3c', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '10px', 
+              fontWeight: '700', 
+              fontSize: '1rem',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              marginTop: '10px',
+            }}
+          >
+            {loading ? 'Entrando...' : 'ENTRAR'}
           </button>
         </form>
         
         <p style={{ textAlign: 'center', marginTop: '20px', color: '#888', fontSize: '0.9rem' }}>
-          Não tem conta? <span onClick={() => navigate('/cadastro')} style={{ color: '#2e7d32', cursor: 'pointer', fontWeight: '700', textDecoration: 'underline' }}>Cadastre-se</span>
+          Não tem conta?{' '}
+          <span 
+            onClick={() => navigate('/cadastro')} 
+            style={{ color: '#2e7d32', cursor: 'pointer', fontWeight: '700', textDecoration: 'underline' }}
+          >
+            Cadastre-se
+          </span>
         </p>
       </div>
     </div>
