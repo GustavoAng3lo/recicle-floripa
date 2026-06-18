@@ -17,5 +17,12 @@
   "bugs": {
     "url": "https://github.com/GustavoAng3lo/recicle-floripa/issues"
   },
-  "homepage": "https://github.com/GustavoAng3lo/recicle-floripa#readme"
+  "homepage": "https://github.com/GustavoAng3lo/recicle-floripa#readme",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.5.0",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^17.6.0",
+    "typescript-eslint": "^8.61.1"
+  }
 }
