@@ -1,3 +1,4 @@
+/* eslint-disable no-undef, @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
 const express = require('express');
 const routes = express.Router();
 const pool = require('./database');
