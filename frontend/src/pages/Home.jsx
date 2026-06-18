@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { LogOut, MapPin, Calendar, Award, Recycle, ChevronRight, Settings } from 'lucide-react';
+import { LogOut, MapPin, Calendar, Award, Recycle, ChevronRight, Settings, Trash2 } from 'lucide-react';
 import logoRecicle from '../assets/png.png';
 
 export default function Home() {
@@ -11,47 +11,67 @@ export default function Home() {
   const [pontos, setPontos] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  const carregarDados = async () => {
+    // Tenta pegar o ID direto ou de dentro do loginData
+    let id = localStorage.getItem('usuario_id');
+    
+    if (!id) {
+      const loginDataRaw = localStorage.getItem("loginData");
+      if (loginDataRaw) {
+        const loginData = JSON.parse(loginDataRaw);
+        id = loginData?.user?.id;
+      }
+    }
+
+    if (!id) {
+      console.error("ID do usuário não encontrado.");
+      navigate('/login');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Requisições paralelas para maior velocidade
+      const [resColetas, resUsuario] = await Promise.all([
+        axios.get(`http://localhost:3000/residuos/${id}`),
+        axios.get(`http://localhost:3000/usuarios/${id}`)
+      ]);
+
+      setColetas(resColetas.data || []);
+      setPontos(resUsuario.data.pontos || 0);
+      if (resUsuario.data.nome) {
+        setNomeUsuario(resUsuario.data.nome);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar dados do banco:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const carregarDados = async () => {
-      // Tenta pegar o ID direto ou de dentro do loginData
-      let id = localStorage.getItem('usuario_id');
-      
-      if (!id) {
-        const loginDataRaw = localStorage.getItem("loginData");
-        if (loginDataRaw) {
-          const loginData = JSON.parse(loginDataRaw);
-          id = loginData?.user?.id;
-        }
-      }
-
-      if (!id) {
-        console.error("ID do usuário não encontrado.");
-        navigate('/login');
-        return;
-      }
-
-      try {
-        setLoading(true);
-        // Requisições paralelas para maior velocidade
-        const [resColetas, resUsuario] = await Promise.all([
-          axios.get(`http://localhost:3000/residuos/${id}`),
-          axios.get(`http://localhost:3000/usuarios/${id}`)
-        ]);
-
-        setColetas(resColetas.data || []);
-        setPontos(resUsuario.data.pontos || 0);
-        if (resUsuario.data.nome) {
-          setNomeUsuario(resUsuario.data.nome);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar dados do banco:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     carregarDados();
   }, [navigate]);
+
+  // Função para Deletar a Coleta e Atualizar os Pontos Dinamicamente
+  const handleDeletarColeta = async (idDaColeta) => {
+    if (!window.confirm("Tem certeza de que deseja excluir este descarte? Seus pontos acumulados diminuirão.")) {
+      return;
+    }
+
+    try {
+      // Chama o endpoint DELETE do backend que configuramos
+      await axios.delete(`http://localhost:3000/residuos/${idDaColeta}`);
+      
+      // Recarrega todos os dados do banco para garantir sincronia real de pontos e histórico
+      await carregarDados();
+      
+      alert("Descarte excluído com sucesso! Seus pontos foram atualizados.");
+    } catch (error) {
+      console.error("Erro ao deletar descarte:", error);
+      alert("Não foi possível excluir o registro.");
+    }
+  };
 
   const handleLogout = () => {
     localStorage.clear();
@@ -113,10 +133,12 @@ export default function Home() {
                 coletas.map((item) => (
                   <HistoryCard 
                     key={item.id}
+                    id={item.id}
                     status={item.categoria} 
                     material={item.tipo_reciclagem} 
                     data={item.data_descarte ? new Date(item.data_descarte).toLocaleDateString('pt-BR') : 'Sem data'} 
                     local={item.localizacao || "Não informada"} 
+                    onDelete={handleDeletarColeta}
                   />
                 ))
               ) : (
@@ -171,18 +193,32 @@ const ActionCard = ({ icon, title, desc, onClick }) => (
   </div>
 );
 
-const HistoryCard = ({ status, data, local, material }) => (
+const HistoryCard = ({ id, status, data, local, material, onDelete }) => (
   <div style={historyCardStyle}>
     <div style={recycleCircleStyle}><Recycle size={22} color="#2e7d32" /></div>
-    <div style={{ flex: 1 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <span style={{ fontWeight: '800', color: '#2e7d32', display: 'block', textTransform: 'capitalize' }}>{status}</span>
-          <span style={{ fontSize: '0.8rem', color: '#666', fontWeight: '600' }}>{material || 'Não identificado'}</span>
+    <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontWeight: '800', color: '#2e7d32', textTransform: 'capitalize' }}>{status}</span>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3b82f6' }}></span>
         </div>
-        <span style={{ color: '#888', fontSize: '0.8rem', fontWeight: '600' }}>{data}</span>
+        <span style={{ fontSize: '0.8rem', color: '#666', fontWeight: '600', display: 'block', marginTop: '2px' }}>{material || 'Não identificado'}</span>
+        <p style={{ margin: '4px 0 0 0', color: '#555', fontSize: '0.95rem', fontWeight: '500' }}>{local}</p>
       </div>
-      <p style={{ margin: '4px 0 0 0', color: '#555', fontSize: '0.95rem', fontWeight: '500' }}>{local}</p>
+      
+      {/* Container da direita com data e lixeira */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'end', gap: '10px' }}>
+        <span style={{ color: '#888', fontSize: '0.8rem', fontWeight: '600' }}>{data}</span>
+        <button 
+          onClick={() => onDelete(id)}
+          style={deleteButtonStyle}
+          title="Excluir descarte"
+          onMouseEnter={(e) => e.currentTarget.style.color = '#b91c1c'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#ef4444'}
+        >
+          <Trash2 size={18} />
+        </button>
+      </div>
     </div>
   </div>
 );
@@ -196,7 +232,8 @@ const sectionTitleStyle = { color: '#333', fontWeight: '900', marginBottom: '25p
 const actionCardStyle = { backgroundColor: 'white', padding: '25px', borderRadius: '24px', border: '1px solid #eee', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s ease' };
 const iconBoxStyle = { backgroundColor: '#f0f7f0', width: '45px', height: '45px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' };
 const historyCardStyle = { display: 'flex', alignItems: 'center', gap: '20px', padding: '20px', backgroundColor: 'white', borderRadius: '24px', border: '1px solid #eee' };
-const recycleCircleStyle = { backgroundColor: '#f0f7f0', padding: '12px', borderRadius: '16px' };
+const recycleCircleStyle = { backgroundColor: '#f0f7f0', padding: '12px', borderRadius: '16px', display: 'flex', alignItems: 'center' };
+const deleteButtonStyle = { background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', transition: 'color 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center' };
 const statsBoxStyle = { background: 'linear-gradient(135deg, #2e7d32 0%, #64bc3c 100%)', padding: '35px', borderRadius: '30px', color: 'white', position: 'sticky', top: '20px' };
 const statItemStyle = { backgroundColor: 'rgba(255,255,255,0.15)', padding: '20px', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' };
 const configButtonStyle = { marginTop: '10px', width: '100%', padding: '15px', borderRadius: '12px', border: 'none', backgroundColor: 'white', color: '#2e7d32', fontWeight: '800', cursor: 'pointer', fontSize: '0.9rem' };

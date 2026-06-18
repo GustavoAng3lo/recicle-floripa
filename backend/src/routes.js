@@ -121,18 +121,35 @@ routes.put('/usuarios/:id', async (req, res) => {
   }
   try {
     await pool.query('UPDATE usuarios SET nome = $1 WHERE id = $2', [nome.trim(), id]);
-    return res.json({ message: "Perfil atualizado com sucesso." });
+    return res.json({ message: "Perfil updated com sucesso." });
   } catch (err) {
     return res.status(500).json({ error: "Erro ao atualizar perfil." });
   }
 });
 
-// 7. Excluir um registro de coleta
+// 7. Excluir um registro de coleta e subtrair 5 pontos do usuário
 routes.delete('/residuos/:id', async (req, res) => {
   const { id } = req.params;
   try {
+    // 1. Busca quem é o dono desse descarte na tabela residuos
+    const buscaResiduo = await pool.query('SELECT usuario_id FROM residuos WHERE id = $1', [id]);
+
+    if (buscaResiduo.rows.length === 0) {
+      return res.status(404).json({ error: "Registro de coleta não encontrado." });
+    }
+
+    const { usuario_id } = buscaResiduo.rows[0];
+
+    // 2. Deleta o registro de coleta do banco de dados
     await pool.query('DELETE FROM residuos WHERE id = $1', [id]);
-    return res.json({ message: "Registro de coleta excluído com sucesso!" });
+
+    // 3. Subtrai 5 pontos do usuário dono (impedindo que fique menor que zero)
+    await pool.query(
+      'UPDATE usuarios SET pontos = GREATEST(0, COALESCE(pontos, 0) - 5) WHERE id = $1',
+      [usuario_id]
+    );
+
+    return res.json({ message: "Registro de coleta excluído e 5 pontos deduzidos!" });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Erro ao excluir descarte." });
