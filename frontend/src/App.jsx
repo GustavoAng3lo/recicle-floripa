@@ -6,6 +6,8 @@ import Home from './pages/Home';
 import Coleta from './pages/Coleta';
 import Configuracoes from './pages/Configuracoes';
 import Servicos from './pages/servicos';
+import Scanner from './pages/Scanner';
+import ComprovarDescarte from './pages/ComprovarDescarte';
 import './App.css';
 
 function App() {
@@ -38,6 +40,14 @@ function App() {
         <Route
           path="/servicos"
           element={isAuthenticated() ? <Servicos /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/scanner"
+          element={isAuthenticated() ? <Scanner /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/comprovar-descarte"
+          element={isAuthenticated() ? <ComprovarDescarte /> : <Navigate to="/" />}
         />
 
         {/* Redirecionamento de rotas inexistentes */}

@@ -1,5 +1,4 @@
 /* eslint-disable no-undef, @typescript-eslint/no-require-imports */
-const variavelTesteProfessor = 10;
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');

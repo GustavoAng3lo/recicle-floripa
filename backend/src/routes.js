@@ -3,12 +3,86 @@ const express = require('express');
 const routes = express.Router();
 const pool = require('./database');
 const bcrypt = require('bcrypt');
+const multer = require('multer');
+const { GoogleGenAI } = require('@google/genai');
 
 const SALT_ROUNDS = 10;
+
+// Configuração do Multer (armazenamento na memória para envio direto para a IA)
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Rota de teste
 routes.get('/', (req, res) => {
   return res.json({ message: "API Recicle Floripa Online!" });
+});
+
+// ==========================================
+// ROTA DE IA: ANÁLISE DE RESÍDUOS POR IMAGEM
+// ==========================================
+routes.post('/ia/analisar', upload.single('imagem'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "Nenhuma imagem foi enviada." });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error("❌ GEMINI_API_KEY não foi encontrada nas variáveis de ambiente (.env).");
+      return res.status(500).json({ error: "Chave de API não configurada no servidor." });
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+
+    const prompt = `
+      Você é um especialista em reciclagem e sustentabilidade urbana no Brasil.
+      Analise a imagem enviada e retorne estritamente um objeto JSON com o seguinte formato:
+      {
+        "item": "Nome do item identificado",
+        "reciclavel": true,
+        "categoria": "Plástico",
+        "corLixeira": "Vermelho",
+        "instrucaoPreparo": "Instrução prática e curta de como preparar o item antes do descarte",
+        "pontosSugeridos": 5
+      }
+      Categorias válidas: Plástico, Papel, Vidro, Metal, Orgânico, Não Reciclável / Rejeito, Eletrônico.
+      Cores válidas: Vermelho, Azul, Verde, Amarelo, Marrom, Cinza.
+      Não adicione blocos de markdown nem texto extra fora do JSON.
+    `;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                data: req.file.buffer.toString('base64'),
+                mimeType: req.file.mimetype || 'image/jpeg'
+              }
+            }
+          ]
+        }
+      ],
+      config: {
+        responseMimeType: 'application/json'
+      }
+    });
+
+    let textoLimpo = response.text.trim();
+    if (textoLimpo.startsWith('```json')) {
+      textoLimpo = textoLimpo.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (textoLimpo.startsWith('```')) {
+      textoLimpo = textoLimpo.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+
+    const resultadoJson = JSON.parse(textoLimpo);
+    return res.json(resultadoJson);
+  } catch (error) {
+    console.error("❌ Erro detalhado ao processar imagem na IA:", error);
+    return res.status(500).json({ error: error.message || "Falha ao analisar a imagem com IA." });
+  }
 });
 
 // 1. Cadastro de Usuário

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { LogOut, MapPin, Calendar, Award, Recycle, ChevronRight, Settings, Trash2 } from 'lucide-react';
+import { LogOut, MapPin, Award, Recycle, ChevronRight, Settings, Trash2, Camera } from 'lucide-react';
 import logoRecicle from '../assets/png.png';
 
 export default function Home() {
@@ -60,7 +60,7 @@ export default function Home() {
     }
 
     try {
-      // Chama o endpoint DELETE do backend que configuramos
+      // Chama o endpoint DELETE do backend
       await axios.delete(`http://localhost:3000/residuos/${idDaColeta}`);
       
       // Recarrega todos os dados do banco para garantir sincronia real de pontos e histórico
@@ -118,10 +118,10 @@ export default function Home() {
             <h3 style={sectionTitleStyle}>O que você deseja fazer?</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '40px' }}>
               <ActionCard 
-                icon={<Calendar color="#2e7d32" />} 
-                title="Agendar Coleta" 
-                desc="Registre um novo descarte agora." 
-                onClick={() => navigate('/coleta')} 
+                icon={<Camera color="#2e7d32" />} 
+                title="Escanear e Descartar" 
+                desc="Aponte a câmera para a IA identificar o resíduo." 
+                onClick={() => navigate('/scanner')} 
               />
               <ActionCard icon={<MapPin color="#2e7d32" />} title="Pontos de Entrega" desc="Encontre locais de descarte em Floripa." />
               <ActionCard icon={<Award color="#2e7d32" />} title="Trocar Pontos" desc="Resgate prêmios e benefícios." />
