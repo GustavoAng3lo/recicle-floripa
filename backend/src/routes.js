@@ -70,10 +70,6 @@ routes.post('/residuos', async (req, res) => {
       [categoria, tipo_reciclagem, quantidade, localizacao, usuario_id]
     );
 
-<<<<<<< HEAD
-    // B. Soma 5 pontos
-=======
->>>>>>> e12e929080f3d3239e2f025b612774ddbc5eed4d
     await pool.query(
       'UPDATE usuarios SET pontos = COALESCE(pontos, 0) + 5 WHERE id = $1',
       [usuario_id]
@@ -125,7 +121,7 @@ routes.put('/usuarios/:id', async (req, res) => {
   }
   try {
     await pool.query('UPDATE usuarios SET nome = $1 WHERE id = $2', [nome.trim(), id]);
-    return res.json({ message: "Perfil updated com sucesso." });
+    return res.json({ message: "Perfil atualizado com sucesso." });
   } catch (err) {
     return res.status(500).json({ error: "Erro ao atualizar perfil." });
   }
@@ -135,7 +131,6 @@ routes.put('/usuarios/:id', async (req, res) => {
 routes.delete('/residuos/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    // 1. Busca quem é o dono desse descarte na tabela residuos
     const buscaResiduo = await pool.query('SELECT usuario_id FROM residuos WHERE id = $1', [id]);
 
     if (buscaResiduo.rows.length === 0) {
@@ -144,10 +139,8 @@ routes.delete('/residuos/:id', async (req, res) => {
 
     const { usuario_id } = buscaResiduo.rows[0];
 
-    // 2. Deleta o registro de coleta do banco de dados
     await pool.query('DELETE FROM residuos WHERE id = $1', [id]);
 
-    // 3. Subtrai 5 pontos do usuário dono (impedindo que fique menor que zero)
     await pool.query(
       'UPDATE usuarios SET pontos = GREATEST(0, COALESCE(pontos, 0) - 5) WHERE id = $1',
       [usuario_id]
