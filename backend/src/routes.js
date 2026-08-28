@@ -65,13 +65,15 @@ routes.post('/residuos', async (req, res) => {
   const { categoria, tipo_reciclagem, quantidade, localizacao, usuario_id } = req.body;
 
   try {
-    // A. Salva a coleta
     await pool.query(
       'INSERT INTO residuos (categoria, tipo_reciclagem, quantidade, localizacao, usuario_id, data_descarte) VALUES ($1, $2, $3, $4, $5, NOW())',
       [categoria, tipo_reciclagem, quantidade, localizacao, usuario_id]
     );
 
+<<<<<<< HEAD
     // B. Soma 5 pontos
+=======
+>>>>>>> e12e929080f3d3239e2f025b612774ddbc5eed4d
     await pool.query(
       'UPDATE usuarios SET pontos = COALESCE(pontos, 0) + 5 WHERE id = $1',
       [usuario_id]
@@ -123,7 +125,7 @@ routes.put('/usuarios/:id', async (req, res) => {
   }
   try {
     await pool.query('UPDATE usuarios SET nome = $1 WHERE id = $2', [nome.trim(), id]);
-    return res.json({ message: "Perfil atualizado com sucesso." });
+    return res.json({ message: "Perfil updated com sucesso." });
   } catch (err) {
     return res.status(500).json({ error: "Erro ao atualizar perfil." });
   }

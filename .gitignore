@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Dependências
 node_modules/
 package-lock.json
@@ -14,3 +15,7 @@ yarn-error.log*
 .DS_Store
 dist/
 build/
+=======
+.env
+node_modules/
+>>>>>>> e12e929080f3d3239e2f025b612774ddbc5eed4d
