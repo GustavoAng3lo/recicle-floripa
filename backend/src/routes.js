@@ -101,6 +101,88 @@ routes.post('/ia/analisar', upload.single('imagem'), async (req, res) => {
   }
 });
 
+// ==========================================================
+// ROTA DE IA: VALIDAÇÃO DE DESCARTE NA LIXEIRA (ANTI-FRAUDE)
+// ==========================================================
+routes.post('/ia/validar-descarte', upload.single('imagem'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "Nenhuma imagem foi enviada." });
+    }
+
+    const { categoria, item } = req.body;
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: "Chave de API não configurada." });
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+
+    const prompt = `
+      Você é um auditor de sustentabilidade e descarte correto de resíduos.
+      O usuário está tentando comprovar que descartou o item "${item || 'resíduo'}" da categoria "${categoria || 'reciclável'}".
+      
+      Analise a foto enviada e responda estritamente um JSON no seguinte formato:
+      {
+        "valido": true,
+        "motivo": "Explicação curta se foi aprovado ou reprovado"
+      }
+
+      Critérios:
+      - "valido": true se a imagem mostrar uma lixeira, ecoponto, saco de lixo, lixeira seletiva ou o ato de descartar/reciclar.
+      - "valido": false se a imagem for claramente aleatória (ex: selfie, parede, chão sem lixeira, tela de computador, animal, comida avulsa sem contexto de descarte).
+      
+      Não inclua markdown ou texto fora do JSON.
+    `;
+
+    const contents = [
+      {
+        role: 'user',
+        parts: [
+          { text: prompt },
+          {
+            inlineData: {
+              data: req.file.buffer.toString('base64'),
+              mimeType: req.file.mimetype || 'image/jpeg'
+            }
+          }
+        ]
+      }
+    ];
+
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents,
+        config: { responseMimeType: 'application/json' }
+      });
+    } catch (errModel) {
+      console.warn("⚠️ Fallback para gemini-3.6-flash na validação anti-fraude...");
+      response = await ai.models.generateContent({
+        model: 'gemini-3.6-flash',
+        contents,
+        config: { responseMimeType: 'application/json' }
+      });
+    }
+
+    let textoLimpo = response.text.trim();
+    if (textoLimpo.startsWith('```json')) {
+      textoLimpo = textoLimpo.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (textoLimpo.startsWith('```')) {
+      textoLimpo = textoLimpo.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+
+    const resultadoJson = JSON.parse(textoLimpo);
+    return res.json(resultadoJson);
+
+  } catch (error) {
+    console.error("❌ Erro ao validar descarte na IA:", error);
+    return res.status(500).json({ error: error.message || "Erro ao validar comprovação." });
+  }
+});
+
 // 1. Cadastro de Usuário
 routes.post('/usuarios', async (req, res) => {
   const { nome, email, senha, cpf } = req.body;
