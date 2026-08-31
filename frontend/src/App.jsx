@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import Scanner from './pages/Scanner';
 import ComprovarDescarte from './pages/ComprovarDescarte';
 import PontosEntrega from './pages/PontosEntrega';
+import Configuracoes from './pages/Configuracoes';
 
 export default function App() {
   return (
@@ -28,6 +29,9 @@ export default function App() {
 
         {/* Ecopontos e Mapa */}
         <Route path="/pontos" element={<PontosEntrega />} />
+
+        {/* Configurações da Conta */}
+        <Route path="/configuracoes" element={<Configuracoes />} />
 
         {/* Rota coringa para rotas não encontradas */}
         <Route path="*" element={<Navigate to="/home" replace />} />

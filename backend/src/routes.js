@@ -66,7 +66,6 @@ routes.post('/ia/analisar', upload.single('imagem'), async (req, res) => {
 
     let response;
     try {
-      // Primeira tentativa com gemini-2.5-flash
       response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents,
@@ -76,7 +75,6 @@ routes.post('/ia/analisar', upload.single('imagem'), async (req, res) => {
       });
     } catch (errModel) {
       console.warn("⚠️ Modelo primário ocupado ou indisponível, tentando fallback para gemini-3.6-flash...");
-      // Fallback para gemini-3.6-flash
       response = await ai.models.generateContent({
         model: 'gemini-3.6-flash',
         contents,
@@ -299,7 +297,40 @@ routes.put('/usuarios/:id', async (req, res) => {
   }
 });
 
-// 7. Excluir um registro de coleta e subtrair 5 pontos do usuário
+// 7. Alterar Senha com Validação da Senha Atual
+routes.put('/usuarios/:id/senha', async (req, res) => {
+  const { id } = req.params;
+  const { senhaAtual, novaSenha } = req.body;
+
+  const senhaValida = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{6,8}$/.test(novaSenha);
+  if (!senhaValida) {
+    return res.status(400).json({
+      error: "A nova senha deve ter entre 6 e 8 caracteres, com maiúsculo, minúsculo e caractere especial."
+    });
+  }
+
+  try {
+    const buscaUsuario = await pool.query('SELECT senha FROM usuarios WHERE id = $1', [id]);
+    if (buscaUsuario.rows.length === 0) {
+      return res.status(404).json({ error: "Usuário não encontrado." });
+    }
+
+    const senhaCorreta = await bcrypt.compare(senhaAtual, buscaUsuario.rows[0].senha);
+    if (!senhaCorreta) {
+      return res.status(401).json({ error: "A senha atual informada está incorreta." });
+    }
+
+    const novoHash = await bcrypt.hash(novaSenha, SALT_ROUNDS);
+    await pool.query('UPDATE usuarios SET senha = $1 WHERE id = $2', [novoHash, id]);
+
+    return res.json({ message: "Senha alterada com sucesso!" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Erro ao atualizar a senha." });
+  }
+});
+
+// 8. Excluir um registro de coleta e subtrair 5 pontos do usuário
 routes.delete('/residuos/:id', async (req, res) => {
   const { id } = req.params;
   try {

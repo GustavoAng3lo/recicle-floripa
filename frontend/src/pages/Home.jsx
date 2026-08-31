@@ -223,12 +223,12 @@ export default function Home() {
                 </span>
               </div>
 
-              <button
-                onClick={() => alert('Configurações em breve!')}
-                className="w-full bg-white text-[#057a44] hover:bg-emerald-50 font-bold py-3 rounded-xl transition text-xs shadow-sm cursor-pointer mt-1"
-              >
-                Configurações da Conta
-              </button>
+           <button
+  onClick={() => navigate('/configuracoes')}
+  className="w-full bg-white text-[#057a44] hover:bg-emerald-50 font-bold py-3 rounded-xl transition text-xs shadow-sm cursor-pointer mt-1"
+>
+  Configurações da Conta
+</button>
             </div>
           </div>
 
