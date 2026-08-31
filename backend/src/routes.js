@@ -49,26 +49,42 @@ routes.post('/ia/analisar', upload.single('imagem'), async (req, res) => {
       Não adicione blocos de markdown nem texto extra fora do JSON.
     `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                data: req.file.buffer.toString('base64'),
-                mimeType: req.file.mimetype || 'image/jpeg'
-              }
+    const contents = [
+      {
+        role: 'user',
+        parts: [
+          { text: prompt },
+          {
+            inlineData: {
+              data: req.file.buffer.toString('base64'),
+              mimeType: req.file.mimetype || 'image/jpeg'
             }
-          ]
-        }
-      ],
-      config: {
-        responseMimeType: 'application/json'
+          }
+        ]
       }
-    });
+    ];
+
+    let response;
+    try {
+      // Primeira tentativa com gemini-2.5-flash
+      response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents,
+        config: {
+          responseMimeType: 'application/json'
+        }
+      });
+    } catch (errModel) {
+      console.warn("⚠️ Modelo primário ocupado ou indisponível, tentando fallback para gemini-3.6-flash...");
+      // Fallback para gemini-3.6-flash
+      response = await ai.models.generateContent({
+        model: 'gemini-3.6-flash',
+        contents,
+        config: {
+          responseMimeType: 'application/json'
+        }
+      });
+    }
 
     let textoLimpo = response.text.trim();
     if (textoLimpo.startsWith('```json')) {
