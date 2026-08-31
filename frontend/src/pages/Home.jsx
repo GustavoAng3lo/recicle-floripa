@@ -1,240 +1,239 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { LogOut, MapPin, Award, Recycle, ChevronRight, Settings, Trash2, Camera } from 'lucide-react';
-import logoRecicle from '../assets/png.png';
 
 export default function Home() {
   const navigate = useNavigate();
-  const [nomeUsuario, setNomeUsuario] = useState(localStorage.getItem('usuarioNome') || "Usuário");
-  const [coletas, setColetas] = useState([]);
-  const [pontos, setPontos] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [usuario, setUsuario] = useState({ nome: 'Usuário', pontos: 0 });
+  const [historico, setHistorico] = useState([]);
+  const [carregando, setCarregando] = useState(true);
 
-  const carregarDados = async () => {
-    // Tenta pegar o ID direto ou de dentro do loginData
-    let id = localStorage.getItem('usuario_id');
-    
-    if (!id) {
-      const loginDataRaw = localStorage.getItem("loginData");
-      if (loginDataRaw) {
-        const loginData = JSON.parse(loginDataRaw);
-        id = loginData?.user?.id;
-      }
-    }
-
-    if (!id) {
-      console.error("ID do usuário não encontrado.");
-      navigate('/login');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      // Requisições paralelas para maior velocidade
-      const [resColetas, resUsuario] = await Promise.all([
-        axios.get(`http://localhost:3000/residuos/${id}`),
-        axios.get(`http://localhost:3000/usuarios/${id}`)
-      ]);
-
-      setColetas(resColetas.data || []);
-      setPontos(resUsuario.data.pontos || 0);
-      if (resUsuario.data.nome) {
-        setNomeUsuario(resUsuario.data.nome);
-      }
-    } catch (error) {
-      console.error("Erro ao carregar dados do banco:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const usuarioId = localStorage.getItem('usuario_id') || 1;
 
   useEffect(() => {
     carregarDados();
-  }, [navigate]);
+  }, []);
 
-  // Função para Deletar a Coleta e Atualizar os Pontos Dinamicamente
-  const handleDeletarColeta = async (idDaColeta) => {
-    if (!window.confirm("Tem certeza de que deseja excluir este descarte? Seus pontos acumulados diminuirão.")) {
-      return;
+  const carregarDados = async () => {
+    try {
+      const resUser = await fetch(`http://localhost:3000/usuarios/${usuarioId}`);
+      if (resUser.ok) {
+        const dataUser = await resUser.json();
+        setUsuario(dataUser);
+      }
+
+      const resHist = await fetch(`http://localhost:3000/residuos/${usuarioId}`);
+      if (resHist.ok) {
+        const dataHist = await resHist.json();
+        setHistorico(dataHist);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados da Home:', error);
+    } finally {
+      setCarregando(false);
     }
+  };
+
+  const handleExcluirColeta = async (id) => {
+    if (!window.confirm('Deseja realmente excluir este registro? (-5 pontos)')) return;
 
     try {
-      // Chama o endpoint DELETE do backend
-      await axios.delete(`http://localhost:3000/residuos/${idDaColeta}`);
-      
-      // Recarrega todos os dados do banco para garantir sincronia real de pontos e histórico
-      await carregarDados();
-      
-      alert("Descarte excluído com sucesso! Seus pontos foram atualizados.");
+      const res = await fetch(`http://localhost:3000/residuos/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        carregarDados();
+      }
     } catch (error) {
-      console.error("Erro ao deletar descarte:", error);
-      alert("Não foi possível excluir o registro.");
+      console.error('Erro ao excluir coleta:', error);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate('/login');
-  };
-
-  if (loading) {
-    return <div style={{ padding: '40px', textAlign: 'center', fontFamily: 'sans-serif' }}>Carregando painel...</div>;
-  }
-
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f8faf8', fontFamily: '"Inter", sans-serif', paddingBottom: '40px' }}>
+    <div className="min-h-screen bg-[#f4f7f5] flex flex-col font-sans">
       
-      {/* NAVBAR SUPERIOR */}
-      <nav style={navStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '5px', display: 'flex' }}>
-            <img src={logoRecicle} alt="Logo" style={{ width: '40px', height: 'auto' }} />
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div style={{ textAlign: 'right', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }} onClick={() => navigate('/configuracoes')}>
-            <div>
-              <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: '700' }}>{nomeUsuario}</p>
-              <p style={{ margin: 0, fontSize: '0.75rem', opacity: 0.8 }}>Eco-Cidadão</p>
-            </div>
-            <Settings size={20} style={{ opacity: 0.9 }} />
-          </div>
-          <button onClick={handleLogout} style={logoutButtonStyle}><LogOut size={18} /> Sair</button>
-        </div>
-      </nav>
+      {/* Banner Superior Compacto e Elegante */}
+      <header className="bg-[#0e9f45] text-white pt-8 pb-16 px-4 text-center flex flex-col items-center">
+        <h1 className="text-3xl sm:text-4xl font-black tracking-tight drop-shadow-sm">
+          Faça sua coleta
+        </h1>
+        <p className="text-emerald-100 mt-1.5 text-sm sm:text-base font-normal opacity-95">
+          Sua atitude muda o mundo, comece pelo lixo.
+        </p>
+        <button
+          onClick={() => navigate('/pontos')}
+          className="mt-4 bg-white text-[#0e9f45] hover:bg-emerald-50 font-bold px-7 py-2 rounded-full shadow-md text-sm transition-all duration-200 hover:scale-105 cursor-pointer"
+        >
+          Mapa de Pontos
+        </button>
+      </header>
 
-      {/* SEÇÃO HERO */}
-      <section style={heroStyle}>
-        <h1 style={{ fontSize: '2.8rem', fontWeight: '900', marginBottom: '15px' }}>Faça sua coleta</h1>
-        <p style={{ fontSize: '1.3rem', opacity: 0.9, marginBottom: '30px' }}>Sua atitude muda o mundo, comece pelo lixo.</p>
-        <button style={mapButtonStyle}>Mapa de Pontos</button>
-      </section>
+      {/* Conteúdo Central Alinhado */}
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 pb-12 -mt-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          {/* Coluna da Esquerda: Ações + Histórico */}
+          <div className="lg:col-span-8 space-y-7">
+            
+            {/* Seção 1: O que você deseja fazer */}
+            <section>
+              <h2 className="text-base font-bold text-gray-800 mb-3 tracking-tight">
+                O que você deseja fazer?
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                
+                {/* Card 1: Scanner */}
+                <div
+                  onClick={() => navigate('/scanner')}
+                  className="bg-white p-4.5 rounded-2xl border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.04)] hover:shadow-lg hover:border-emerald-400 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#0e9f45] flex items-center justify-center text-lg mb-3 shadow-inner">
+                      📷
+                    </div>
+                    <h3 className="font-bold text-gray-900 text-sm">Escanear e Descartar</h3>
+                    <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                      Aponte a câmera para a IA identificar o resíduo e a lixeira.
+                    </p>
+                  </div>
+                  <span className="text-[#0e9f45] text-xs font-semibold mt-4 flex items-center gap-1">
+                    Acessar <span className="text-base leading-none">›</span>
+                  </span>
+                </div>
 
-      {/* CONTEÚDO EM GRID */}
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '30px', alignItems: 'start' }}>
-          <div>
-            <h3 style={sectionTitleStyle}>O que você deseja fazer?</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '40px' }}>
-              <ActionCard 
-                icon={<Camera color="#2e7d32" />} 
-                title="Escanear e Descartar" 
-                desc="Aponte a câmera para a IA identificar o resíduo." 
-                onClick={() => navigate('/scanner')} 
-              />
-              <ActionCard icon={<MapPin color="#2e7d32" />} title="Pontos de Entrega" desc="Encontre locais de descarte em Floripa." />
-              <ActionCard icon={<Award color="#2e7d32" />} title="Trocar Pontos" desc="Resgate prêmios e benefícios." />
-            </div>
+                {/* Card 2: Pontos de Entrega */}
+                <div
+                  onClick={() => navigate('/pontos')}
+                  className="bg-white p-4.5 rounded-2xl border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.04)] hover:shadow-lg hover:border-emerald-400 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#0e9f45] flex items-center justify-center text-lg mb-3 shadow-inner">
+                      📍
+                    </div>
+                    <h3 className="font-bold text-gray-900 text-sm">Pontos de Entrega</h3>
+                    <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                      Encontre ecopontos e locais de descarte em Floripa.
+                    </p>
+                  </div>
+                  <span className="text-[#0e9f45] text-xs font-semibold mt-4 flex items-center gap-1">
+                    Acessar <span className="text-base leading-none">›</span>
+                  </span>
+                </div>
 
-            <h3 style={sectionTitleStyle}>Histórico de Coletas</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              {coletas.length > 0 ? (
-                coletas.map((item) => (
-                  <HistoryCard 
-                    key={item.id}
-                    id={item.id}
-                    status={item.categoria} 
-                    material={item.tipo_reciclagem} 
-                    data={item.data_descarte ? new Date(item.data_descarte).toLocaleDateString('pt-BR') : 'Sem data'} 
-                    local={item.localizacao || "Não informada"} 
-                    onDelete={handleDeletarColeta}
-                  />
-                ))
+                {/* Card 3: Trocar Pontos */}
+                <div
+                  onClick={() => navigate('/trocar-pontos')}
+                  className="bg-white p-4.5 rounded-2xl border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.04)] hover:shadow-lg hover:border-emerald-400 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#0e9f45] flex items-center justify-center text-lg mb-3 shadow-inner">
+                      🏷️
+                    </div>
+                    <h3 className="font-bold text-gray-900 text-sm">Trocar Pontos</h3>
+                    <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                      Resgate prêmios, benefícios e cupons ecológicos.
+                    </p>
+                  </div>
+                  <span className="text-[#0e9f45] text-xs font-semibold mt-4 flex items-center gap-1">
+                    Acessar <span className="text-base leading-none">›</span>
+                  </span>
+                </div>
+
+              </div>
+            </section>
+
+            {/* Seção 2: Histórico de Coletas */}
+            <section>
+              <h2 className="text-base font-bold text-gray-800 mb-3 tracking-tight">
+                Histórico de Coletas
+              </h2>
+              
+              {carregando ? (
+                <div className="bg-white p-8 rounded-2xl border border-gray-100 text-center text-gray-400 text-sm shadow-sm">
+                  Carregando coletas...
+                </div>
+              ) : historico.length === 0 ? (
+                <div className="bg-white p-8 rounded-2xl border border-gray-100 text-center text-gray-500 text-sm shadow-sm">
+                  Nenhuma coleta registrada ainda. Escaneie um resíduo para começar!
+                </div>
               ) : (
-                <div style={emptyHistoryStyle}>
-                  <Recycle size={40} color="#ccc" style={{ marginBottom: '10px' }} />
-                  <p style={{ margin: 0 }}>Nenhuma coleta registrada para este usuário.</p>
+                <div className="space-y-3">
+                  {historico.map((item) => (
+                    <div
+                      key={item.id}
+                      className="bg-white p-4 rounded-2xl border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-md transition flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 bg-emerald-100 text-[#0e9f45] rounded-xl flex items-center justify-center font-bold text-lg flex-shrink-0">
+                          ♻️
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-sm text-gray-900">{item.categoria}</span>
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                          </div>
+                          <p className="text-xs text-gray-600 font-medium mt-0.5">{item.tipo_reciclagem}</p>
+                          <p className="text-[11px] text-gray-400">{item.localizacao}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <span className="text-xs text-gray-400 font-medium">
+                          {new Date(item.data_descarte).toLocaleDateString('pt-BR')}
+                        </span>
+                        <button
+                          onClick={() => handleExcluirColeta(item.id)}
+                          className="text-gray-300 hover:text-red-500 transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-red-50 text-base"
+                          title="Excluir coleta"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
+            </section>
+
+          </div>
+
+          {/* Coluna da Direita: Card Flutuante de Perfil e Pontuação */}
+          <div className="lg:col-span-4">
+            <div className="bg-[#057a44] text-white p-5 sm:p-6 rounded-3xl shadow-xl space-y-4">
+              <h3 className="text-base font-bold flex items-center gap-1.5">
+                Olá, {usuario.nome}! 👋
+              </h3>
+
+              {/* Box 1: Pontos */}
+              <div className="bg-[#0e9f45] p-4 rounded-2xl border border-emerald-400/20">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-100 block">
+                  SEUS PONTOS ACUMULADOS
+                </span>
+                <span className="text-3xl font-black mt-1 block tracking-tight">
+                  {usuario.pontos || 0} pts
+                </span>
+              </div>
+
+              {/* Box 2: Coletas */}
+              <div className="bg-[#0e9f45] p-4 rounded-2xl border border-emerald-400/20">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-100 block">
+                  COLETAS REALIZADAS
+                </span>
+                <span className="text-3xl font-black mt-1 block tracking-tight">
+                  {historico.length}
+                </span>
+              </div>
+
+              <button
+                onClick={() => alert('Configurações em breve!')}
+                className="w-full bg-white text-[#057a44] hover:bg-emerald-50 font-bold py-3 rounded-xl transition text-xs shadow-sm cursor-pointer mt-1"
+              >
+                Configurações da Conta
+              </button>
             </div>
           </div>
 
-          <aside style={statsBoxStyle}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '20px' }}>Olá, {nomeUsuario}! 👋</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <div style={statItemStyle}>
-                <span style={{ fontSize: '0.8rem', opacity: 0.9, fontWeight: '700' }}>SEUS PONTOS ACUMULADOS</span>
-                <strong style={{ fontSize: '1.8rem' }}>{pontos} pts</strong>
-              </div>
-              <div style={statItemStyle}>
-                <span style={{ fontSize: '0.8rem', opacity: 0.9, fontWeight: '700' }}>COLETAS REALIZADAS</span>
-                <strong style={{ fontSize: '1.8rem' }}>{coletas.length}</strong>
-              </div>
-            </div>
-            <button onClick={() => navigate('/configuracoes')} style={configButtonStyle}>Configurações da Conta</button>
-          </aside>
         </div>
       </main>
     </div>
   );
 }
-
-// COMPONENTES AUXILIARES
-const ActionCard = ({ icon, title, desc, onClick }) => (
-  <div 
-    style={actionCardStyle} 
-    onClick={onClick}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.transform = 'translateY(-2px)';
-      e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.05)';
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.transform = 'none';
-      e.currentTarget.style.boxShadow = 'none';
-    }}
-  >
-    <div style={iconBoxStyle}>{icon}</div>
-    <h4 style={{ margin: '12px 0 5px 0', fontSize: '1.1rem', fontWeight: '800', color: '#333' }}>{title}</h4>
-    <p style={{ margin: 0, fontSize: '0.85rem', color: '#777', lineHeight: '1.4' }}>{desc}</p>
-    <div style={{ marginTop: '15px', color: '#2e7d32', display: 'flex', alignItems: 'center', fontSize: '0.8rem', fontWeight: '700' }}>
-      Acessar <ChevronRight size={14} />
-    </div>
-  </div>
-);
-
-const HistoryCard = ({ id, status, data, local, material, onDelete }) => (
-  <div style={historyCardStyle}>
-    <div style={recycleCircleStyle}><Recycle size={22} color="#2e7d32" /></div>
-    <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontWeight: '800', color: '#2e7d32', textTransform: 'capitalize' }}>{status}</span>
-          <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3b82f6' }}></span>
-        </div>
-        <span style={{ fontSize: '0.8rem', color: '#666', fontWeight: '600', display: 'block', marginTop: '2px' }}>{material || 'Não identificado'}</span>
-        <p style={{ margin: '4px 0 0 0', color: '#555', fontSize: '0.95rem', fontWeight: '500' }}>{local}</p>
-      </div>
-      
-      {/* Container da direita com data e lixeira */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'end', gap: '10px' }}>
-        <span style={{ color: '#888', fontSize: '0.8rem', fontWeight: '600' }}>{data}</span>
-        <button 
-          onClick={() => onDelete(id)}
-          style={deleteButtonStyle}
-          title="Excluir descarte"
-          onMouseEnter={(e) => e.currentTarget.style.color = '#b91c1c'}
-          onMouseLeave={(e) => e.currentTarget.style.color = '#ef4444'}
-        >
-          <Trash2 size={18} />
-        </button>
-      </div>
-    </div>
-  </div>
-);
-
-// ESTILOS (CSS-in-JS)
-const navStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 5%', backgroundColor: '#2e7d32', color: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' };
-const heroStyle = { background: 'linear-gradient(135deg, #2e7d32 0%, #64bc3c 100%)', padding: '60px 5%', color: 'white', textAlign: 'center', marginBottom: '40px' };
-const logoutButtonStyle = { backgroundColor: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '8px 16px', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' };
-const mapButtonStyle = { backgroundColor: 'white', color: '#2e7d32', border: 'none', padding: '18px 70px', borderRadius: '16px', fontWeight: '900', fontSize: '1.2rem', cursor: 'pointer', boxShadow: '0 6px 20px rgba(0,0,0,0.15)' };
-const sectionTitleStyle = { color: '#333', fontWeight: '900', marginBottom: '25px', fontSize: '1.3rem' };
-const actionCardStyle = { backgroundColor: 'white', padding: '25px', borderRadius: '24px', border: '1px solid #eee', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s ease' };
-const iconBoxStyle = { backgroundColor: '#f0f7f0', width: '45px', height: '45px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' };
-const historyCardStyle = { display: 'flex', alignItems: 'center', gap: '20px', padding: '20px', backgroundColor: 'white', borderRadius: '24px', border: '1px solid #eee' };
-const recycleCircleStyle = { backgroundColor: '#f0f7f0', padding: '12px', borderRadius: '16px', display: 'flex', alignItems: 'center' };
-const deleteButtonStyle = { background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', transition: 'color 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center' };
-const statsBoxStyle = { background: 'linear-gradient(135deg, #2e7d32 0%, #64bc3c 100%)', padding: '35px', borderRadius: '30px', color: 'white', position: 'sticky', top: '20px' };
-const statItemStyle = { backgroundColor: 'rgba(255,255,255,0.15)', padding: '20px', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' };
-const configButtonStyle = { marginTop: '10px', width: '100%', padding: '15px', borderRadius: '12px', border: 'none', backgroundColor: 'white', color: '#2e7d32', fontWeight: '800', cursor: 'pointer', fontSize: '0.9rem' };
-const emptyHistoryStyle = { textAlign: 'center', padding: '40px', backgroundColor: 'white', borderRadius: '24px', border: '1px dashed #ccc', color: '#888', display: 'flex', flexDirection: 'column', alignItems: 'center' };

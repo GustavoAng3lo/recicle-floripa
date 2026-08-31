@@ -1,60 +1,37 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+
 import Login from './pages/Login';
 import Cadastro from './pages/Cadastro';
 import Home from './pages/Home';
-import Coleta from './pages/Coleta';
-import Configuracoes from './pages/Configuracoes';
-import Servicos from './pages/servicos';
 import Scanner from './pages/Scanner';
 import ComprovarDescarte from './pages/ComprovarDescarte';
-import './App.css';
+import PontosEntrega from './pages/PontosEntrega';
 
-function App() {
-  // Simulação simples de autenticação: verifica se existe um usuário no localStorage
-  const isAuthenticated = () => {
-    return localStorage.getItem('usuario_id') !== null;
-  };
-
+export default function App() {
   return (
-    <Router>
+    <BrowserRouter>
       <Routes>
-        {/* Rotas Públicas */}
-        <Route path="/" element={<Login />} />
+        {/* Rota inicial redireciona para login */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
+        {/* Autenticação */}
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
 
-        {/* Rotas Privadas (Protegidas) */}
-        <Route 
-          path="/home" 
-          element={isAuthenticated() ? <Home /> : <Navigate to="/" />} 
-        />
-        <Route 
-          path="/coleta" 
-          element={isAuthenticated() ? <Coleta /> : <Navigate to="/" />} 
-        />
-        <Route
-          path="/configuracoes"
-          element={isAuthenticated() ? <Configuracoes /> : <Navigate to="/" />}
-        />
-        <Route
-          path="/servicos"
-          element={isAuthenticated() ? <Servicos /> : <Navigate to="/" />}
-        />
-        <Route
-          path="/scanner"
-          element={isAuthenticated() ? <Scanner /> : <Navigate to="/" />}
-        />
-        <Route
-          path="/comprovar-descarte"
-          element={isAuthenticated() ? <ComprovarDescarte /> : <Navigate to="/" />}
-        />
+        {/* Painel Principal */}
+        <Route path="/home" element={<Home />} />
 
-        {/* Redirecionamento de rotas inexistentes */}
-        <Route path="*" element={<Navigate to="/" />} />
+        {/* Fluxo de IA e Descarte */}
+        <Route path="/scanner" element={<Scanner />} />
+        <Route path="/comprovar-descarte" element={<ComprovarDescarte />} />
+
+        {/* Ecopontos e Mapa */}
+        <Route path="/pontos" element={<PontosEntrega />} />
+
+        {/* Rota coringa para rotas não encontradas */}
+        <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
-    </Router>
+    </BrowserRouter>
   );
 }
-
-export default App;
