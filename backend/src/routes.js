@@ -200,7 +200,7 @@ routes.post(
 
 // 1. Cadastro de Usuário
 routes.post('/usuarios', async (req, res) => {
-  const { nome, email, senha, cpf } = req.body;
+  const { nome, email, senha, cpf, data_nascimento } = req.body;
 
   const senhaValida =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{6,8}$/.test(senha);
@@ -216,8 +216,8 @@ routes.post('/usuarios', async (req, res) => {
   try {
     const senhaHash = await bcrypt.hash(senha, SALT_ROUNDS);
     const novoUsuario = await pool.query(
-      'INSERT INTO usuarios (nome, email, senha, cpf, pontos) VALUES ($1, $2, $3, $4, 0) RETURNING id, nome, email',
-      [nome, email, senhaHash, cpf]
+      'INSERT INTO usuarios (nome, email, senha, cpf, data_nascimento, pontos) VALUES ($1, $2, $3, $4, $5, 0) RETURNING id, nome, email',
+      [nome, email, senhaHash, cpf, data_nascimento]
     );
     return res.status(201).json(novoUsuario.rows[0]);
   } catch (err) {

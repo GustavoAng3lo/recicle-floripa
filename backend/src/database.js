@@ -20,4 +20,7 @@ pool.query('SELECT NOW()', (err, res) => {
   }
 });
 
+pool.query('ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS data_nascimento DATE')
+  .catch((err) => console.error('❌ ERRO AO CONFIGURAR DATA DE NASCIMENTO:', err.message));
+
 module.exports = pool;

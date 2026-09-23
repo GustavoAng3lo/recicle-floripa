@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios'; // 1. Importação necessária
 import {
@@ -67,6 +67,7 @@ const Cadastro = () => {
         email,
         senha,
         cpf,
+        data_nascimento: dataNasc
       });
       if (response.status === 201) {
         navigate('/');
