@@ -9,7 +9,8 @@ const pool = new Pool({
   connectionString: connectionString,
   ssl: {
     rejectUnauthorized: false
-  }
+  },
+  options: '-c client_encoding=UTF8'
 });
 
 pool.query('SELECT NOW()', (err, res) => {

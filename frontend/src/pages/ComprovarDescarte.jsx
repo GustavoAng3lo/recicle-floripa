@@ -1,218 +1,128 @@
-import React, { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
+import { ArrowLeft, Camera, Check, MapPin, ShieldCheck, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+
+const prepararImagemParaAuditoria = (arquivo) => new Promise((resolve, reject) => {
+  const imagem = new Image();
+  const url = URL.createObjectURL(arquivo);
+
+  imagem.onload = () => {
+    const limite = 1280;
+    const escala = Math.min(1, limite / Math.max(imagem.naturalWidth, imagem.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(imagem.naturalWidth * escala);
+    canvas.height = Math.round(imagem.naturalHeight * escala);
+    canvas.getContext('2d').drawImage(imagem, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob((blob) => {
+      URL.revokeObjectURL(url);
+      if (!blob) {
+        reject(new Error('Não foi possível preparar a foto.'));
+        return;
+      }
+      resolve(new File([blob], 'comprovacao.jpg', { type: 'image/jpeg' }));
+    }, 'image/jpeg', 0.82);
+  };
+  imagem.onerror = () => {
+    URL.revokeObjectURL(url);
+    reject(new Error('Não foi possível ler a foto.'));
+  };
+  imagem.src = url;
+});
 
 export default function ComprovarDescarte() {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  const resultadoIA = location.state?.resultado || {
-    item: 'Garrafa de vidro transparente',
-    categoria: 'Vidro',
-    pontosSugeridos: 5
-  };
-
+  const resultadoIA = location.state?.resultado || { item: 'Garrafa de vidro transparente', categoria: 'Vidro', pontosSugeridos: 5 };
   const [imagem, setImagem] = useState(null);
   const [imagemPreview, setImagemPreview] = useState(null);
   const [localizacao, setLocalizacao] = useState('Centro - Florianópolis');
   const [carregando, setCarregando] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
   const [erro, setErro] = useState('');
-
   const fileInputRef = useRef(null);
   const usuarioId = localStorage.getItem('usuario_id') || 1;
 
-  const handleImagemChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImagem(file);
-      setImagemPreview(URL.createObjectURL(file));
-      setErro('');
-    }
+  const handleImagemChange = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    setImagem(file);
+    setImagemPreview(URL.createObjectURL(file));
+    setErro('');
   };
 
   const handleConfirmarDescarte = async () => {
     if (!imagem) {
-      setErro('Por favor, selecione ou tire uma foto comprovando o descarte.');
+      setErro('Selecione ou tire uma foto comprovando o descarte.');
       return;
     }
 
     setCarregando(true);
     setErro('');
-    setStatusMsg('🤖 A IA está auditando a foto do descarte...');
+    setStatusMsg('A IA está auditando a foto do descarte...');
 
     try {
-      // 1. Enviar para a rota de auditoria anti-fraude
+      const imagemOtimizada = await prepararImagemParaAuditoria(imagem);
       const formData = new FormData();
-      formData.append('imagem', imagem);
+      formData.append('imagem', imagemOtimizada);
       formData.append('categoria', resultadoIA.categoria);
       formData.append('item', resultadoIA.item);
-
-      const resIA = await fetch('http://localhost:3000/ia/validar-descarte', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!resIA.ok) {
-        throw new Error('Falha ao comunicar com o validador de IA.');
-      }
-
+      const resIA = await fetch('http://localhost:3000/ia/validar-descarte', { method: 'POST', body: formData });
+      if (!resIA.ok) throw new Error('Falha ao comunicar com o validador de IA.');
       const validacao = await resIA.json();
 
-      // Se a IA recusou a foto
       if (!validacao.valido) {
-        setErro(`❌ Foto reprovada pela IA: ${validacao.motivo || 'A imagem não mostra uma lixeira, ecoponto ou ato de descarte.'}`);
+        setErro(`Foto reprovada pela IA: ${validacao.motivo || 'A imagem não mostra um descarte.'}`);
         setCarregando(false);
         return;
       }
 
-      // 2. Se a IA aprovou, grava no banco e soma pontos
-      setStatusMsg('✅ Descarte validado! Creditando pontos...');
-
+      setStatusMsg('Descarte validado! Creditando pontos...');
       const resBanco = await fetch('http://localhost:3000/residuos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          categoria: resultadoIA.categoria,
-          tipo_reciclagem: resultadoIA.item,
-          quantidade: '1 un',
-          localizacao: localizacao,
-          usuario_id: usuarioId
-        })
+        body: JSON.stringify({ categoria: resultadoIA.categoria, tipo_reciclagem: resultadoIA.item, quantidade: '1 un', localizacao, usuario_id: usuarioId }),
       });
 
-      if (resBanco.ok) {
-        alert('🎉 Descarte auditado e aprovado com sucesso! +5 Pontos adicionados.');
-        navigate('/home');
-      } else {
-        throw new Error('Erro ao registrar no banco de dados.');
-      }
-
-    } catch (err) {
-      console.error(err);
-      setErro(err.message || 'Erro durante a validação.');
+      if (!resBanco.ok) throw new Error('Erro ao registrar no banco de dados.');
+      alert('Descarte auditado e aprovado com sucesso! +5 Pontos adicionados.');
+      navigate('/home');
+    } catch (error) {
+      console.error(error);
+      setErro(error.message || 'Erro durante a validação.');
     } finally {
       setCarregando(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f7f5] flex flex-col items-center p-4 sm:p-6 font-sans">
-      <div className="w-full max-w-lg">
-        
-        <button
-          onClick={() => navigate('/scanner')}
-          className="text-[#0e9f45] hover:text-[#0b8037] font-semibold mb-4 flex items-center gap-1 cursor-pointer text-sm"
-        >
-          ← Voltar ao Scanner
-        </button>
+    <main className='proof-page'>
+      <div className='proof-shell'>
+        <header className='scanner-topbar'>
+          <button className='scanner-back-button' onClick={() => navigate('/scanner')} aria-label='Voltar para o scanner'><ArrowLeft size={18} /></button>
+          <div><span className='home-eyebrow'>NOVO DESCARTE</span><h1>Comprovar descarte</h1></div>
+          <span className='scanner-step'>2/2</span>
+        </header>
 
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center justify-center gap-2">
-            Comprovar Descarte ♻️
-          </h1>
-          <p className="text-xs text-gray-600 mt-1">
-            Tire uma foto do material na lixeira ou ecoponto para a IA auditar e liberar seus <span className="font-bold text-[#0e9f45]">+5 Pontos</span>.
-          </p>
-        </div>
+        <section className='proof-content'>
+          <div className='proof-intro'><ShieldCheck size={18} /><div><strong>Última etapa</strong><p>Mostre onde o material foi descartado para receber seus pontos.</p></div></div>
 
-        {/* Resumo do Item */}
-        <div className="bg-emerald-50/70 border border-emerald-200 p-4 rounded-2xl mb-5 flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">
-              ITEM IDENTIFICADO
-            </span>
-            <span className="text-sm font-bold text-gray-800">
-              {resultadoIA.item}
-            </span>
-          </div>
-          <span className="text-xs bg-[#0e9f45] text-white px-3 py-1 rounded-full font-bold">
-            {resultadoIA.categoria}
-          </span>
-        </div>
+          <div className='proof-item-card'><div><span className='home-eyebrow'>ITEM IDENTIFICADO</span><strong>{resultadoIA.item}</strong></div><span>{resultadoIA.categoria}</span></div>
 
-        {/* Upload da Imagem */}
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          className={`w-full h-56 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-4 cursor-pointer transition-all bg-white overflow-hidden mb-4 ${
-            imagemPreview ? 'border-emerald-500' : 'border-emerald-300 hover:border-emerald-500 hover:bg-emerald-50/20'
-          }`}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={handleImagemChange}
-          />
+          <button className={`proof-upload ${imagemPreview ? 'has-preview' : ''}`} onClick={() => fileInputRef.current?.click()}>
+            <input ref={fileInputRef} type='file' accept='image/*' capture='environment' hidden onChange={handleImagemChange} />
+            {imagemPreview ? <img src={imagemPreview} alt='Foto do descarte' /> : <><span className='scanner-upload-icon'><Camera size={25} /></span><strong>Fotografe o descarte</strong><small>Mostre a lixeira, ecoponto ou local correto</small></>}
+          </button>
 
-          {imagemPreview ? (
-            <img
-              src={imagemPreview}
-              alt="Foto do descarte"
-              className="w-full h-full object-contain rounded-xl"
-            />
-          ) : (
-            <div className="text-center space-y-2">
-              <div className="w-12 h-12 rounded-full bg-emerald-50 text-[#0e9f45] mx-auto flex items-center justify-center text-2xl">
-                📷
-              </div>
-              <h4 className="font-bold text-gray-800 text-sm">
-                Fotografar descarte na lixeira
-              </h4>
-              <p className="text-[11px] text-gray-400">
-                Clique aqui para abrir a câmera ou galeria
-              </p>
-            </div>
-          )}
-        </div>
+          <label className='proof-location'><span><MapPin size={14} /> Local do descarte</span><input type='text' value={localizacao} onChange={(event) => setLocalizacao(event.target.value)} /></label>
 
-        {/* Campo de Localização */}
-        <div className="mb-4">
-          <label className="block text-xs font-bold text-gray-700 mb-1.5">
-            Local / Ponto de Coleta:
-          </label>
-          <input
-            type="text"
-            value={localizacao}
-            onChange={(e) => setLocalizacao(e.target.value)}
-            className="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0e9f45]"
-          />
-        </div>
+          {erro && <div className='scanner-error'>{erro}</div>}
+          {carregando && <div className='proof-status'><Sparkles size={15} /><span>{statusMsg}</span></div>}
 
-        {/* Mensagens de Feedback */}
-        {erro && (
-          <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-xs mb-4 font-medium text-center">
-            {erro}
-          </div>
-        )}
-
-        {carregando && (
-          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl text-xs mb-4 font-medium text-center animate-pulse">
-            {statusMsg}
-          </div>
-        )}
-
-        {/* Botão de Validação */}
-        <button
-          onClick={handleConfirmarDescarte}
-          disabled={carregando}
-          className={`w-full py-3.5 rounded-xl font-bold text-white text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer ${
-            carregando
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-[#0e9f45] hover:bg-[#0b8037] active:scale-[0.99]'
-          }`}
-        >
-          {carregando ? (
-            'Auditando com IA...'
-          ) : (
-            <>
-              <span>✓</span> Confirmar e Resgatar +5 Pontos
-            </>
-          )}
-        </button>
-
+          <button className='auth-button auth-button-primary proof-submit' onClick={handleConfirmarDescarte} disabled={carregando}>
+            {carregando ? 'Auditando com IA...' : <><Check size={16} /> Confirmar e ganhar +{resultadoIA.pontosSugeridos || 5} pontos</>}
+          </button>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }

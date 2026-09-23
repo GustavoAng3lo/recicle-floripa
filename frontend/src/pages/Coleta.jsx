@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, Trash2, Search } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, MapPin, Search, Trash2 } from 'lucide-react';
 
 const Coleta = () => {
-  const [descricao, setDescricao] = useState('');
+  const location = useLocation();
+  const [descricao, setDescricao] = useState(location.state?.descricao || '');
   const [tipoReciclagem, setTipoReciclagem] = useState('');
   const [quantidade, setQuantidade] = useState(1);
   const [localizacao, setLocalizacao] = useState('');
@@ -12,30 +13,30 @@ const Coleta = () => {
 
   useEffect(() => {
     const identificarMaterial = () => {
-      const p = descricao.toLowerCase();
+      const p = descricao.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       if (!p) {
         setTipoReciclagem('');
         return;
       }
 
       // LÓGICA DE RECONHECIMENTO AMPLIADA
-      if (p.includes('garrafa') || p.includes('pote') || p.includes('copo de vidro') || p.includes('vidro') || p.includes('frasco')) {
-        setTipoReciclagem('Vidro 🟢');
+      if (p.includes('pet') || p.includes('plastico') || p.includes('sacola') || p.includes('embalagem') || p.includes('tampa')) {
+        setTipoReciclagem('Plástico');
       } 
       else if (p.includes('lata') || p.includes('latinha') || p.includes('aluminio') || p.includes('ferro') || p.includes('metal') || p.includes('prego')) {
-        setTipoReciclagem('Metal 🟡');
+        setTipoReciclagem('Metal');
       } 
       else if (p.includes('papel') || p.includes('papelao') || p.includes('revista') || p.includes('folha') || p.includes('caderno') || p.includes('jornal')) {
-        setTipoReciclagem('Papel 🔵');
-      } 
-      else if (p.includes('plastico') || p.includes('sacola') || p.includes('pet') || p.includes('copo') || p.includes('embalagem') || p.includes('tampa')) {
-        setTipoReciclagem('Plástico 🔴');
+        setTipoReciclagem('Papel');
       } 
       else if (p.includes('celular') || p.includes('bateria') || p.includes('pilha') || p.includes('fio') || p.includes('carregador') || p.includes('placa')) {
-        setTipoReciclagem('Eletrônico ⚪');
+        setTipoReciclagem('Eletrônico');
+      } 
+      else if (p.includes('garrafa') || p.includes('pote') || p.includes('copo de vidro') || p.includes('vidro') || p.includes('frasco')) {
+        setTipoReciclagem('Vidro');
       } 
       else {
-        setTipoReciclagem('Não identificado');
+        setTipoReciclagem('Não Reciclável / Rejeito');
       }
     };
     identificarMaterial();
@@ -53,65 +54,46 @@ const Coleta = () => {
       });
       alert('Coleta Registrada com Sucesso!');
       navigate('/home');
-    } catch (error) {
+    } catch {
       alert('Erro ao salvar no banco de dados.');
     }
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', fontFamily: 'Inter' }}>
-      <header style={{ display: 'flex', alignItems: 'center', marginBottom: '30px' }}>
-        <ArrowLeft onClick={() => navigate('/home')} style={{ cursor: 'pointer', color: '#2e7d32' }} />
-        <h2 style={{ marginLeft: '20px', color: '#2e7d32', fontWeight: '800' }}>Nova Coleta</h2>
+    <main className='manual-collection-page'>
+      <div className='manual-collection-shell'>
+      <header className='scanner-topbar'>
+        <button className='scanner-back-button' onClick={() => navigate('/scanner')} aria-label='Voltar para o scanner'><ArrowLeft size={18} /></button>
+        <div><h1>Registrar descarte</h1><p>Preencha os dados do material</p></div>
+        <span className='scanner-step'>2/2</span>
       </header>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <div>
-          <label style={{ fontWeight: '700', display: 'block', marginBottom: '5px' }}>O que você está descartando?</label>
-          <div style={{ display: 'flex', alignItems: 'center', border: '2px solid #2e7d32', borderRadius: '12px', padding: '10px' }}>
-            <Search size={20} color="#2e7d32" style={{ marginRight: '10px' }} />
-            <input 
-              placeholder="Ex: Folha de papel, copo plastico..." 
-              style={{ border: 'none', outline: 'none', width: '100%', fontSize: '1rem' }}
+      <section className='manual-collection-content'>
+        <label className='manual-collection-field'>
+          <span>O que você está descartando?</span>
+          <div><Search size={15} /><input
+              placeholder='Ex: folha de papel, copo plástico...'
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
             />
           </div>
-        </div>
+        </label>
 
         {descricao && (
-          <div style={{ 
-            padding: '15px', 
-            backgroundColor: tipoReciclagem === 'Não identificado' ? '#fff5f5' : '#f0f7f0', 
-            borderRadius: '12px', 
-            border: `1px solid ${tipoReciclagem === 'Não identificado' ? '#fc8181' : '#2e7d32'}` 
-          }}>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#555' }}>O sistema reconheceu como:</p>
-            <strong style={{ fontSize: '1.2rem', color: tipoReciclagem === 'Não identificado' ? '#c53030' : '#2e7d32' }}>
-              {tipoReciclagem}
-            </strong>
-          </div>
+          <div className='manual-category-result'><span>Categoria identificada</span><strong><CheckCircle2 size={15} />{tipoReciclagem}</strong></div>
         )}
 
-        <div>
-          <label style={{ fontWeight: '700' }}>Quantidade</label>
-          <input type="number" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} style={inputStyle} />
-        </div>
+        <label className='manual-collection-field'><span>Quantidade</span><input type='number' min='1' value={quantidade} onChange={(e) => setQuantidade(e.target.value)} /></label>
 
-        <div>
-          <label style={{ fontWeight: '700' }}>Localização</label>
-          <input type="text" value={localizacao} onChange={(e) => setLocalizacao(e.target.value)} style={inputStyle} />
-        </div>
+        <label className='manual-collection-field'><span>Localização</span><div><MapPin size={15} /><input type='text' placeholder='Ex: Centro - Florianópolis' value={localizacao} onChange={(e) => setLocalizacao(e.target.value)} /></div></label>
 
-        <button onClick={handleSalvarColeta} style={buttonStyle}>
-          <Trash2 size={20} style={{ marginRight: '10px' }} /> Confirmar Descarte
+        <button className='auth-button auth-button-primary manual-save-button' onClick={handleSalvarColeta} disabled={!descricao.trim() || !localizacao.trim()}>
+          <Trash2 size={16} /> Confirmar descarte (+5 pts)
         </button>
+      </section>
       </div>
-    </div>
+    </main>
   );
 };
-
-const inputStyle = { width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', marginTop: '5px' };
-const buttonStyle = { backgroundColor: '#64bc3c', color: 'white', padding: '18px', borderRadius: '12px', border: 'none', fontWeight: '800', cursor: 'pointer', marginTop: '10px' };
 
 export default Coleta;

@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import Login from './pages/Login';
@@ -8,6 +7,10 @@ import Scanner from './pages/Scanner';
 import ComprovarDescarte from './pages/ComprovarDescarte';
 import PontosEntrega from './pages/PontosEntrega';
 import Configuracoes from './pages/Configuracoes';
+import Servicos from './pages/Servicos';
+import Historico from './pages/Historico';
+import Perfil from './pages/Perfil';
+import Coleta from './pages/Coleta';
 
 export default function App() {
   return (
@@ -32,6 +35,12 @@ export default function App() {
 
         {/* Configurações da Conta */}
         <Route path="/configuracoes" element={<Configuracoes />} />
+
+        {/* Guia de descarte e coleta especial */}
+        <Route path="/servicos" element={<Servicos />} />
+        <Route path="/historico" element={<Historico />} />
+        <Route path="/perfil" element={<Perfil />} />
+        <Route path="/coleta" element={<Coleta />} />
 
         {/* Rota coringa para rotas não encontradas */}
         <Route path="*" element={<Navigate to="/home" replace />} />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import logoRecicle from '../assets/png.png';
@@ -38,136 +38,76 @@ const Login = () => {
   };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      minHeight: '100vh', 
-      backgroundColor: '#f0f4f0',
-      fontFamily: '"Inter", sans-serif' 
-    }}>
-      
-      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <h1 style={{ 
-          color: '#2e7d32', 
-          marginBottom: '15px', 
-          fontWeight: '900', 
-          fontSize: '3.2rem', 
-          letterSpacing: '-1px', 
-          fontFamily: '"Inter", sans-serif'
-        }}>
-          RECICLE
-        </h1>
-        <img 
-          src={logoRecicle} 
-          alt="Mascote Recicle" 
-          style={{ 
-            width: '200px', 
-            height: 'auto', 
-            borderRadius: '24px',
-            backgroundColor: 'white',
-            padding: '8px',
-            boxShadow: '0 8px 16px rgba(0,0,0,0.08)'
-          }} 
-        />
-      </div>
+    <main className='auth-page'>
+      <section className='auth-shell'>
+        <header className='auth-brand'>
+          <div className='auth-logo-mark'>
+            <img src={logoRecicle} alt='Logo Recicle Floripa' />
+          </div>
+          <span>Recicle Floripa</span>
+        </header>
 
-      <div style={{ 
-        background: 'white', 
-        padding: '35px', 
-        borderRadius: '24px', 
-        boxShadow: '0 12px 40px rgba(0,0,0,0.1)', 
-        width: '90%', 
-        maxWidth: '380px',
-        textAlign: 'center'
-      }}>
-        <h2 style={{ color: '#333', marginBottom: '20px', fontWeight: '700' }}>Entrar</h2>
+        <div className='auth-content'>
+          <div className='auth-hero-image'>
+            <img src={logoRecicle} alt='Mascote Recicle Floripa' />
+          </div>
+          <h1>Transforme lixo em pontos que viram benefícios!</h1>
+          <p className='auth-introduction'>
+            Recicle, ganhe pontos e ajude a construir uma cidade mais limpa.
+          </p>
         
         {erro && (
-          <p style={{ 
-            color: '#d32f2f', 
-            backgroundColor: '#fff5f5', 
-            border: '1px solid #fc8181', 
-            borderRadius: '8px', 
-            padding: '10px', 
-            fontSize: '0.85rem', 
-            marginBottom: '15px' 
-          }}>
+          <p className='auth-error'>
             {erro}
           </p>
         )}
 
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <div style={{ textAlign: 'left' }}>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#555', fontSize: '0.85rem', fontWeight: '600' }}>E-mail</label>
+        <form className='auth-form' onSubmit={handleLogin}>
+          <label className='auth-field'>
+            <span>E-mail</span>
             <input
               type="email"
               placeholder="seuemail@exemplo.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              style={{ 
-                width: '100%', 
-                padding: '12px', 
-                borderRadius: '10px', 
-                border: '1px solid #ddd', 
-                boxSizing: 'border-box', 
-                outline: 'none',
-              }}
             />
-          </div>
+          </label>
 
-          <div style={{ textAlign: 'left' }}>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#555', fontSize: '0.85rem', fontWeight: '600' }}>Senha</label>
+          <label className='auth-field'>
+            <span>Senha</span>
             <input
               type="password"
               placeholder="********"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
               required
-              style={{ 
-                width: '100%', 
-                padding: '12px', 
-                borderRadius: '10px', 
-                border: '1px solid #ddd', 
-                boxSizing: 'border-box', 
-                outline: 'none',
-              }}
             />
-          </div>
+          </label>
 
           <button 
             type="submit" 
             disabled={loading}
-            style={{ 
-              padding: '14px', 
-              backgroundColor: loading ? '#a5d6a7' : '#64bc3c', 
-              color: 'white', 
-              border: 'none', 
-              borderRadius: '10px', 
-              fontWeight: '700', 
-              fontSize: '1rem',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              marginTop: '10px',
-              fontFamily: '"Inter", sans-serif'
-            }}
+            className='auth-button auth-button-primary'
           >
             {loading ? 'Entrando...' : 'ENTRAR'}
           </button>
+
+          <button
+            type='button'
+            className='auth-button auth-button-secondary'
+            onClick={() => navigate('/cadastro')}
+          >
+            Criar conta
+          </button>
         </form>
         
-        <p style={{ textAlign: 'center', marginTop: '20px', color: '#888', fontSize: '0.9rem' }}>
-          Não tem conta?{' '}
-          <span 
-            onClick={() => navigate('/cadastro')} 
-            style={{ color: '#2e7d32', cursor: 'pointer', fontWeight: '700', textDecoration: 'underline' }}
-          >
-            Cadastre-se
-          </span>
+        <p className='auth-footer'>
+          Ao entrar, você concorda com os termos de uso e a privacidade.
         </p>
-      </div>
-    </div>
+        </div>
+      </section>
+    </main>
   );
 };
 
