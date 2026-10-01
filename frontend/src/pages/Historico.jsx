@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { CalendarDays, Filter, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getResidueVisual, normalizeResidueText } from '../utils/residueVisual';
+import { API_BASE_URL } from '../utils/api';
 
 export default function Historico() {
   const navigate = useNavigate();
@@ -12,7 +13,7 @@ export default function Historico() {
 
   const carregarHistorico = useCallback(async () => {
     try {
-      const response = await fetch(`http://localhost:3000/residuos/${usuarioId}`);
+      const response = await fetch(`${API_BASE_URL}/residuos/${usuarioId}`);
       if (response.ok) setHistorico(await response.json());
     } catch (error) {
       console.error('Erro ao carregar histórico:', error);
@@ -28,7 +29,7 @@ export default function Historico() {
 
   const excluirColeta = async (id) => {
     if (!window.confirm('Deseja realmente excluir este registro? (-5 pontos)')) return;
-    const response = await fetch(`http://localhost:3000/residuos/${id}`, { method: 'DELETE' });
+    const response = await fetch(`${API_BASE_URL}/residuos/${id}`, { method: 'DELETE' });
     if (response.ok) carregarHistorico();
   };
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Crown, LogOut, Medal, Settings, Ship, TreePine, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../utils/api';
 
 export default function Perfil() {
   const navigate = useNavigate();
@@ -12,8 +13,8 @@ export default function Perfil() {
   const carregarPerfil = useCallback(async () => {
     try {
       const [perfilResponse, historicoResponse] = await Promise.all([
-        fetch(`http://localhost:3000/usuarios/${usuarioId}`),
-        fetch(`http://localhost:3000/residuos/${usuarioId}`),
+        fetch(`${API_BASE_URL}/usuarios/${usuarioId}`),
+        fetch(`${API_BASE_URL}/residuos/${usuarioId}`),
       ]);
       if (perfilResponse.ok) {
         const perfil = await perfilResponse.json();

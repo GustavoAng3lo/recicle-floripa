@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, CheckCircle2, MapPin, Search, Trash2 } from 'lucide-react';
+import { API_BASE_URL } from '../utils/api';
 
 const Coleta = () => {
   const location = useLocation();
@@ -45,7 +46,7 @@ const Coleta = () => {
   const handleSalvarColeta = async () => {
     try {
       const usuario_id = localStorage.getItem('usuario_id');
-      await axios.post('http://localhost:3000/residuos', {
+      await axios.post(`${API_BASE_URL}/residuos`, {
         categoria: tipoReciclagem,
         tipo_reciclagem: descricao,
         quantidade: Number(quantidade),

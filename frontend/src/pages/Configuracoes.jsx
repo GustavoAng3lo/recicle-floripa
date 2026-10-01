@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AlertCircle, Award, BarChart3, Calendar, CheckCircle, ChevronRight, Lock, LogOut, ShieldCheck, User, X } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../utils/api';
 
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -34,13 +35,13 @@ export default function Configuracoes() {
   const finalUserId = userId || 1;
 
   useEffect(() => {
-    axios.get(`http://localhost:3000/usuarios/${finalUserId}`).then((response) => {
+    axios.get(`${API_BASE_URL}/usuarios/${finalUserId}`).then((response) => {
       setPontos(response.data.pontos || 0);
       if (response.data.nome) setNomeUsuario(response.data.nome);
       if (response.data.email) setEmail(response.data.email);
       if (response.data.cpf) setCpf(response.data.cpf);
     }).catch((error) => console.error('Erro ao buscar perfil:', error));
-    axios.get(`http://localhost:3000/residuos/${finalUserId}`).then((response) => setHistoricoColetas(response.data || [])).catch((error) => console.error('Erro ao buscar histórico:', error));
+    axios.get(`${API_BASE_URL}/residuos/${finalUserId}`).then((response) => setHistoricoColetas(response.data || [])).catch((error) => console.error('Erro ao buscar histórico:', error));
   }, [finalUserId]);
 
   const handleSalvar = async (event) => {
@@ -52,7 +53,7 @@ export default function Configuracoes() {
     setCarregando(true);
     setFeedback({ msg: '', tipo: '' });
     try {
-      await axios.put(`http://localhost:3000/usuarios/${finalUserId}`, { nome: nomeUsuario.trim(), email, cpf });
+      await axios.put(`${API_BASE_URL}/usuarios/${finalUserId}`, { nome: nomeUsuario.trim(), email, cpf });
       localStorage.setItem('usuarioNome', nomeUsuario.trim());
       if (loginData?.user) {
         const updatedLoginData = {
@@ -85,7 +86,7 @@ export default function Configuracoes() {
     setSalvandoSenha(true);
     setFeedbackSenha({ msg: '', tipo: '' });
     try {
-      const response = await axios.put(`http://localhost:3000/usuarios/${finalUserId}/senha`, { senhaAtual, novaSenha });
+      const response = await axios.put(`${API_BASE_URL}/usuarios/${finalUserId}/senha`, { senhaAtual, novaSenha });
       setFeedbackSenha({ msg: response.data.message || 'Senha atualizada com sucesso!', tipo: 'sucesso' });
       setSenhaAtual('');
       setNovaSenha('');

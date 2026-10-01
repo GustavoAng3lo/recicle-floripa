@@ -3,13 +3,84 @@ const express = require('express');
 const routes = express.Router();
 const pool = require('./database');
 const bcrypt = require('bcrypt');
-const multer = require('multer');
 const { GoogleGenAI } = require('@google/genai');
 
 const SALT_ROUNDS = 10;
+const MAX_CAMERA_FRAME_BYTES = 8 * 1024 * 1024;
+const ASSINATURAS_IMAGEM = {
+  'image/jpeg': (buffer) => buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff,
+  'image/png': (buffer) => buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+  'image/webp': (buffer) => buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP',
+};
+const MODELOS_IA = ['gemini-2.5-flash', 'gemini-3.6-flash'];
+const TENTATIVAS_POR_MODELO = 3;
+const ATRASO_BASE_MS = 350;
 
-// Configuração do Multer (armazenamento na memória para envio direto para a IA)
-const upload = multer({ storage: multer.memoryStorage() });
+const esperar = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const erroTransitorio = (error) => {
+  const status = Number(error.status || error.response?.status);
+  const codigo = String(error.code || error.status || '').toUpperCase();
+  return [429, 500, 502, 503, 504].includes(status)
+    || ['UNAVAILABLE', 'RESOURCE_EXHAUSTED', 'INTERNAL', 'DEADLINE_EXCEEDED', 'ECONNRESET', 'ETIMEDOUT'].includes(codigo);
+};
+
+const gerarConteudoComResiliencia = async (ai, contents, config) => {
+  let ultimoErro;
+
+  for (const model of MODELOS_IA) {
+    for (let tentativa = 1; tentativa <= TENTATIVAS_POR_MODELO; tentativa += 1) {
+      try {
+        return await ai.models.generateContent({ model, contents, config });
+      } catch (error) {
+        ultimoErro = error;
+        if (!erroTransitorio(error)) throw error;
+
+        const esgotouTentativas = tentativa === TENTATIVAS_POR_MODELO;
+        if (esgotouTentativas) {
+          console.warn(`Modelo ${model} indisponível após ${tentativa} tentativas; tentando próximo modelo.`);
+          break;
+        }
+
+        const atraso = ATRASO_BASE_MS * (2 ** (tentativa - 1)) + Math.floor(Math.random() * 200);
+        console.warn(`Erro transitório no modelo ${model}; nova tentativa ${tentativa + 1}/${TENTATIVAS_POR_MODELO} em ${atraso}ms.`);
+        await esperar(atraso);
+      }
+    }
+  }
+
+  const indisponivel = new Error('O serviço de identificação está temporariamente ocupado. Tente novamente em alguns instantes.');
+  indisponivel.status = 503;
+  indisponivel.code = 'AI_TEMPORARILY_UNAVAILABLE';
+  indisponivel.cause = ultimoErro;
+  throw indisponivel;
+};
+
+const receberFrameDaCamera = (req, res, next) => {
+  const { frame, mimeType } = req.body || {};
+  const base64Valido = typeof frame === 'string'
+    && frame.length > 0
+    && frame.length % 4 === 0
+    && /^[A-Za-z0-9+/]+={0,2}$/.test(frame);
+
+  if (!base64Valido || !ASSINATURAS_IMAGEM[mimeType]) {
+    return res.status(400).json({ error: 'Envie um frame JPEG, PNG ou WebP válido capturado pela câmera.' });
+  }
+
+  const buffer = Buffer.from(frame, 'base64');
+  if (buffer.length > MAX_CAMERA_FRAME_BYTES) {
+    return res.status(413).json({ error: 'O frame da câmera excede o limite de 8 MB.' });
+  }
+  if (buffer.length === 0 || buffer.toString('base64') !== frame) {
+    return res.status(400).json({ error: 'O frame da câmera está corrompido.' });
+  }
+  if (!ASSINATURAS_IMAGEM[mimeType](buffer)) {
+    return res.status(400).json({ error: 'O formato declarado não corresponde ao conteúdo do frame.' });
+  }
+
+  req.cameraFrame = { data: frame, mimeType };
+  return next();
+};
 
 // Rota de teste
 routes.get('/', (req, res) => {
@@ -19,12 +90,8 @@ routes.get('/', (req, res) => {
 // ==========================================
 // ROTA DE IA: ANÁLISE DE RESÍDUOS POR IMAGEM
 // ==========================================
-routes.post('/ia/analisar', upload.single('imagem'), async (req, res) => {
+routes.post('/ia/analisar', receberFrameDaCamera, async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'Nenhuma imagem foi enviada.' });
-    }
-
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       console.error(
@@ -60,35 +127,17 @@ routes.post('/ia/analisar', upload.single('imagem'), async (req, res) => {
           { text: prompt },
           {
             inlineData: {
-              data: req.file.buffer.toString('base64'),
-              mimeType: req.file.mimetype || 'image/jpeg',
+              data: req.cameraFrame.data,
+              mimeType: req.cameraFrame.mimeType,
             },
           },
         ],
       },
     ];
 
-    let response;
-    try {
-      response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents,
-        config: {
-          responseMimeType: 'application/json',
-        },
-      });
-    } catch (errModel) {
-      console.warn(
-        '⚠️ Modelo primário ocupado ou indisponível, tentando fallback para gemini-3.6-flash...'
-      );
-      response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
-        contents,
-        config: {
-          responseMimeType: 'application/json',
-        },
-      });
-    }
+    const response = await gerarConteudoComResiliencia(ai, contents, {
+      responseMimeType: 'application/json',
+    });
 
     let textoLimpo = response.text.trim();
     if (textoLimpo.startsWith('```json')) {
@@ -101,9 +150,10 @@ routes.post('/ia/analisar', upload.single('imagem'), async (req, res) => {
     return res.json(resultadoJson);
   } catch (error) {
     console.error('❌ Erro detalhado ao processar imagem na IA:', error);
-    return res
-      .status(500)
-      .json({ error: error.message || 'Falha ao analisar a imagem com IA.' });
+    return res.status(error.status === 503 ? 503 : 500).json({
+      error: error.message || 'Falha ao analisar a imagem com IA.',
+      ...(error.code ? { code: error.code } : {}),
+    });
   }
 });
 
@@ -112,13 +162,9 @@ routes.post('/ia/analisar', upload.single('imagem'), async (req, res) => {
 // ==========================================================
 routes.post(
   '/ia/validar-descarte',
-  upload.single('imagem'),
+  receberFrameDaCamera,
   async (req, res) => {
     try {
-      if (!req.file) {
-        return res.status(400).json({ error: 'Nenhuma imagem foi enviada.' });
-      }
-
       const { categoria, item } = req.body;
 
       const apiKey = process.env.GEMINI_API_KEY;
@@ -152,31 +198,17 @@ routes.post(
             { text: prompt },
             {
               inlineData: {
-                data: req.file.buffer.toString('base64'),
-                mimeType: req.file.mimetype || 'image/jpeg',
+                data: req.cameraFrame.data,
+                mimeType: req.cameraFrame.mimeType,
               },
             },
           ],
         },
       ];
 
-      let response;
-      try {
-        response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents,
-          config: { responseMimeType: 'application/json' },
-        });
-      } catch (errModel) {
-        console.warn(
-          '⚠️ Fallback para gemini-3.6-flash na validação anti-fraude...'
-        );
-        response = await ai.models.generateContent({
-          model: 'gemini-3.6-flash',
-          contents,
-          config: { responseMimeType: 'application/json' },
-        });
-      }
+      const response = await gerarConteudoComResiliencia(ai, contents, {
+        responseMimeType: 'application/json',
+      });
 
       let textoLimpo = response.text.trim();
       if (textoLimpo.startsWith('```json')) {
@@ -191,9 +223,10 @@ routes.post(
       return res.json(resultadoJson);
     } catch (error) {
       console.error('❌ Erro ao validar descarte na IA:', error);
-      return res
-        .status(500)
-        .json({ error: error.message || 'Erro ao validar comprovação.' });
+      return res.status(error.status === 503 ? 503 : 500).json({
+        error: error.message || 'Erro ao validar comprovação.',
+        ...(error.code ? { code: error.code } : {}),
+      });
     }
   }
 );

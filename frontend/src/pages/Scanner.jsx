@@ -1,6 +1,8 @@
-import { useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Camera, CheckCircle2, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, ArrowRight, CheckCircle2, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import CameraCapture from '../components/CameraCapture';
+import { API_BASE_URL } from '../utils/api';
 
 const coresLixeira = {
   Plástico: { bg: '#e53935', border: '#b71c1c', texto: '#fff', tag: 'Lixeira vermelha • Plástico' },
@@ -12,79 +14,40 @@ const coresLixeira = {
   Eletrônico: { bg: '#ff9800', border: '#e65100', texto: '#fff', tag: 'Ponto especial • Eletrônico' },
 };
 
-const prepararImagemParaIA = (arquivo) => new Promise((resolve, reject) => {
-  const imagem = new Image();
-  const url = URL.createObjectURL(arquivo);
-
-  imagem.onload = () => {
-    const limite = 1280;
-    const escala = Math.min(1, limite / Math.max(imagem.naturalWidth, imagem.naturalHeight));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(imagem.naturalWidth * escala);
-    canvas.height = Math.round(imagem.naturalHeight * escala);
-    canvas.getContext('2d').drawImage(imagem, 0, 0, canvas.width, canvas.height);
-    canvas.toBlob((blob) => {
-      URL.revokeObjectURL(url);
-      if (!blob) {
-        reject(new Error('Não foi possível preparar a imagem.'));
-        return;
-      }
-      resolve(new File([blob], 'residuo.jpg', { type: 'image/jpeg' }));
-    }, 'image/jpeg', 0.82);
-  };
-  imagem.onerror = () => {
-    URL.revokeObjectURL(url);
-    reject(new Error('Não foi possível ler a imagem.'));
-  };
-  imagem.src = url;
-});
-
 export default function Scanner() {
   const navigate = useNavigate();
-  const fileInputRef = useRef(null);
-  const [imagemPreview, setImagemPreview] = useState(null);
-  const [arquivoImagem, setArquivoImagem] = useState(null);
   const [carregando, setCarregando] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [erro, setErro] = useState('');
-  const [materialDigitado, setMaterialDigitado] = useState('');
 
-  const lidarComArquivo = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    setArquivoImagem(file);
-    setImagemPreview(URL.createObjectURL(file));
-    setMaterialDigitado(file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '));
-    setResultado(null);
-    setErro('');
-  };
-
-  const analisarImagemComIA = async () => {
-    if (!arquivoImagem) {
-      if (materialDigitado.trim()) {
-        navigate('/coleta', { state: { descricao: materialDigitado.trim() } });
-        return;
-      }
-      setErro('Digite o material ou adicione uma foto primeiro.');
-      return;
-    }
-
+  const analisarFrameComIA = async (cameraFrame) => {
     setCarregando(true);
     setErro('');
-    const formData = new FormData();
+    setResultado(null);
 
     try {
-      const imagemOtimizada = await prepararImagemParaIA(arquivoImagem);
-      formData.append('imagem', imagemOtimizada);
-      const response = await fetch('http://localhost:3000/ia/analisar', { method: 'POST', body: formData });
-      if (!response.ok) throw new Error('Falha ao analisar a imagem.');
+      const response = await fetch(`${API_BASE_URL}/ia/analisar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cameraFrame),
+      });
+      if (!response.ok) {
+        const falha = await response.json().catch(() => ({}));
+        throw new Error(falha.error || 'Falha ao identificar o objeto da câmera.');
+      }
       setResultado(await response.json());
     } catch (error) {
       console.error(error);
-      setErro('Erro ao processar imagem. Verifique a conexão com o servidor.');
+      setErro(error.message || 'Erro ao identificar o objeto. Verifique a conexão com o servidor.');
     } finally {
       setCarregando(false);
     }
+  };
+
+  const iniciarNovoEscaneamento = () => {
+    setResultado(null);
+    setErro('');
+    setCarregando(false);
   };
 
   const lixeiraInfo = resultado ? coresLixeira[resultado.categoria] || coresLixeira['Não Reciclável / Rejeito'] : null;
@@ -99,24 +62,10 @@ export default function Scanner() {
         </header>
 
         <section className='scanner-content'>
-          <input type='file' accept='image/*' capture='environment' ref={fileInputRef} onChange={lidarComArquivo} hidden />
-
-          <label className='scanner-material-field'>
-            <span>O que você descartou?</span>
-            <div>
-              <input value={materialDigitado} onChange={(event) => setMaterialDigitado(event.target.value)} placeholder='Garrafa de Cerveja de Vidro' />
-              <button type='button' onClick={() => fileInputRef.current.click()} aria-label='Adicionar foto do material'><Camera size={15} /></button>
-            </div>
-          </label>
-
-          <p className='scanner-typing-hint'>Digite o item para registrar manualmente ou use a câmera para identificar com IA.</p>
+          <CameraCapture onCapture={analisarFrameComIA} busy={carregando} />
+          <p className='scanner-typing-hint'>Aponte a câmera para o objeto e toque em “Identificar objeto”.</p>
 
           {erro && <div className='scanner-error'>{erro}</div>}
-
-          <button className='auth-button auth-button-primary scanner-analyze' onClick={analisarImagemComIA} disabled={carregando || (!arquivoImagem && !materialDigitado.trim())}>
-            {carregando ? 'Identificando material...' : arquivoImagem ? 'Identificar via IA' : 'Continuar registro'}
-            {!carregando && <Sparkles size={16} />}
-          </button>
 
           {resultado && <article className='scanner-result'>
             <div className='scanner-result-emojis'>♻️ 🎉</div>
@@ -127,7 +76,8 @@ export default function Scanner() {
             <div className='scanner-points-award'>+{resultado.pontosSugeridos || 5} PONTOS CONCEDIDOS!</div>
             <div className='scanner-instruction'><strong>Como preparar</strong><p>{resultado.instrucaoPreparo}</p></div>
             <div className='scanner-bin' style={{ background: lixeiraInfo.bg, borderColor: lixeiraInfo.border, color: lixeiraInfo.texto }}>{lixeiraInfo.tag}</div>
-            <button className='auth-button auth-button-secondary scanner-confirm' onClick={() => navigate('/comprovar-descarte', { state: { resultado, imagemOriginal: imagemPreview } })}>Vou descartar agora <ArrowRight size={15} /></button>
+            <button className='auth-button auth-button-secondary scanner-confirm' onClick={iniciarNovoEscaneamento}><RefreshCw size={15} /> Escanear outro material</button>
+            <button className='auth-button auth-button-secondary scanner-confirm' onClick={() => navigate('/comprovar-descarte', { state: { resultado } })}>Vou descartar agora <ArrowRight size={15} /></button>
           </article>}
         </section>
       </div>

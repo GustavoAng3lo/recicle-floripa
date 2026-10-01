@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Calendar, CreditCard, Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
 import logoRecicle from '../assets/png.png';
+import { API_BASE_URL } from '../utils/api';
 
 const maskCPF = (value) => value
   .replace(/\D/g, '')
@@ -43,7 +44,7 @@ const Cadastro = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:3000/usuarios', {
+      const response = await axios.post(`${API_BASE_URL}/usuarios`, {
         nome,
         email,
         senha,

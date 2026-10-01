@@ -3,6 +3,7 @@ import { ArrowRight, Camera, History, MapPin, Settings, Trash2, UserRound } from
 import { useNavigate } from 'react-router-dom';
 import logoRecicle from '../assets/png.png';
 import { getResidueVisual, normalizeResidueText } from '../utils/residueVisual';
+import { API_BASE_URL } from '../utils/api';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -14,10 +15,10 @@ export default function Home() {
 
   const carregarDados = useCallback(async () => {
     try {
-      const resUser = await fetch(`http://localhost:3000/usuarios/${usuarioId}`);
+      const resUser = await fetch(`${API_BASE_URL}/usuarios/${usuarioId}`);
       if (resUser.ok) setUsuario(await resUser.json());
 
-      const resHist = await fetch(`http://localhost:3000/residuos/${usuarioId}`);
+      const resHist = await fetch(`${API_BASE_URL}/residuos/${usuarioId}`);
       if (resHist.ok) setHistorico(await resHist.json());
     } catch (error) {
       console.error('Erro ao carregar dados da Home:', error);
@@ -35,7 +36,7 @@ export default function Home() {
     if (!window.confirm('Deseja realmente excluir este registro? (-5 pontos)')) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/residuos/${id}`, { method: 'DELETE' });
+      const response = await fetch(`${API_BASE_URL}/residuos/${id}`, { method: 'DELETE' });
       if (response.ok) carregarDados();
     } catch (error) {
       console.error('Erro ao excluir coleta:', error);

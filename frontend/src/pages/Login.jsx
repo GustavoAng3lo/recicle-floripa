@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import logoRecicle from '../assets/png.png';
+import { API_BASE_URL } from '../utils/api';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -16,7 +17,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:3000/login', { email, senha });
+      const response = await axios.post(`${API_BASE_URL}/login`, { email, senha });
       
       if (response.data) {
         // Salva nos formatos das duas ramificações para dar suporte a todas as telas do app
