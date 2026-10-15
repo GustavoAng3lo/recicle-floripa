@@ -9,7 +9,8 @@ const pool = new Pool({
   connectionString: connectionString,
   ssl: {
     rejectUnauthorized: false
-  }
+  },
+  options: '-c client_encoding=UTF8'
 });
 
 pool.query('SELECT NOW()', (err, res) => {
@@ -19,5 +20,8 @@ pool.query('SELECT NOW()', (err, res) => {
     console.log('✅ BANCO DE DADOS NA NUVEM CONECTADO COM SUCESSO!');
   }
 });
+
+pool.query('ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS data_nascimento DATE')
+  .catch((err) => console.error('❌ ERRO AO CONFIGURAR DATA DE NASCIMENTO:', err.message));
 
 module.exports = pool;

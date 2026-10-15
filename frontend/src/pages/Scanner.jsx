@@ -1,209 +1,86 @@
-import React, { useState, useRef } from 'react';
+import { useState } from 'react';
+import { ArrowLeft, ArrowRight, CheckCircle2, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import CameraCapture from '../components/CameraCapture';
+import { API_BASE_URL } from '../utils/api';
+
+const coresLixeira = {
+  Plástico: { bg: '#e53935', border: '#b71c1c', texto: '#fff', tag: 'Lixeira vermelha • Plástico' },
+  Papel: { bg: '#1e88e5', border: '#0d47a1', texto: '#fff', tag: 'Lixeira azul • Papel' },
+  Vidro: { bg: '#43a047', border: '#1b5e20', texto: '#fff', tag: 'Lixeira verde • Vidro' },
+  Metal: { bg: '#fbc02d', border: '#f57f17', texto: '#212121', tag: 'Lixeira amarela • Metal' },
+  Orgânico: { bg: '#8d6e63', border: '#4e342e', texto: '#fff', tag: 'Lixeira marrom • Orgânico' },
+  'Não Reciclável / Rejeito': { bg: '#616161', border: '#212121', texto: '#fff', tag: 'Lixeira cinza • Rejeito' },
+  Eletrônico: { bg: '#ff9800', border: '#e65100', texto: '#fff', tag: 'Ponto especial • Eletrônico' },
+};
 
 export default function Scanner() {
   const navigate = useNavigate();
-  const fileInputRef = useRef(null);
-  
-  const [imagemPreview, setImagemPreview] = useState(null);
-  const [arquivoImagem, setArquivoImagem] = useState(null);
   const [carregando, setCarregando] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [erro, setErro] = useState('');
 
-  // Mapeamento de cores para as lixeiras padrão CONAMA
-  const coresLixeira = {
-    'Plástico': { bg: '#e53935', border: '#b71c1c', texto: '#ffffff', tag: '🔴 Lixeira Vermelha (Plástico)' },
-    'Papel': { bg: '#1e88e5', border: '#0d47a1', texto: '#ffffff', tag: '🔵 Lixeira Azul (Papel)' },
-    'Vidro': { bg: '#43a047', border: '#1b5e20', texto: '#ffffff', tag: '🟢 Lixeira Verde (Vidro)' },
-    'Metal': { bg: '#fbc02d', border: '#f57f17', texto: '#212121', tag: '🟡 Lixeira Amarela (Metal)' },
-    'Orgânico': { bg: '#8d6e63', border: '#4e342e', texto: '#ffffff', tag: '🟤 Lixeira Marrom (Orgânico)' },
-    'Não Reciclável / Rejeito': { bg: '#616161', border: '#212121', texto: '#ffffff', tag: '⚫ Lixeira Cinza / Rejeito' },
-    'Eletrônico': { bg: '#ff9800', border: '#e65100', texto: '#ffffff', tag: '🟠 Ponto de Coleta Especial' }
-  };
-
-  const lidarComArquivo = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setArquivoImagem(file);
-      setImagemPreview(URL.createObjectURL(file));
-      setResultado(null);
-      setErro('');
-    }
-  };
-
-  const analisarImagemComIA = async () => {
-    if (!arquivoImagem) {
-      setErro('Selecione ou capture uma foto primeiro.');
-      return;
-    }
-
+  const analisarFrameComIA = async (cameraFrame) => {
     setCarregando(true);
     setErro('');
-
-    const formData = new FormData();
-    formData.append('imagem', arquivoImagem);
+    setResultado(null);
 
     try {
-      const response = await fetch('http://localhost:3000/ia/analisar', {
+      const response = await fetch(`${API_BASE_URL}/ia/analisar`, {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cameraFrame),
       });
-
       if (!response.ok) {
-        throw new Error('Falha ao analisar a imagem. Tente novamente.');
+        const falha = await response.json().catch(() => ({}));
+        throw new Error(falha.error || 'Falha ao identificar o objeto da câmera.');
       }
-
-      const data = await response.json();
-      setResultado(data);
-    } catch (err) {
-      console.error(err);
-      setErro('Erro ao processar imagem. Verifique a conexão com o servidor.');
+      setResultado(await response.json());
+    } catch (error) {
+      console.error(error);
+      setErro(error.message || 'Erro ao identificar o objeto. Verifique a conexão com o servidor.');
     } finally {
       setCarregando(false);
     }
   };
 
+  const iniciarNovoEscaneamento = () => {
+    setResultado(null);
+    setErro('');
+    setCarregando(false);
+  };
+
   const lixeiraInfo = resultado ? coresLixeira[resultado.categoria] || coresLixeira['Não Reciclável / Rejeito'] : null;
 
   return (
-    <div style={{ maxWidth: '520px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif' }}>
-      <button 
-        onClick={() => navigate('/home')} 
-        style={{ background: 'transparent', border: 'none', color: '#2e7d32', cursor: 'pointer', fontWeight: 'bold', marginBottom: '15px' }}
-      >
-        ← Voltar para o Início
-      </button>
+    <main className='scanner-page'>
+      <div className='scanner-shell'>
+        <header className='scanner-topbar'>
+          <button className='scanner-back-button' onClick={() => navigate('/home')} aria-label='Voltar para o início'><ArrowLeft size={18} /></button>
+          <div><h1>Novo Descarte</h1><p>Identifique o material reciclável</p></div>
+          <span className='scanner-step'>1/2</span>
+        </header>
 
-      <h2 style={{ color: '#1b5e20', textAlign: 'center', marginBottom: '8px' }}>Escanear Material com IA 📸</h2>
-      <p style={{ textAlign: 'center', color: '#666', fontSize: '14px', marginBottom: '20px' }}>
-        Tire uma foto ou selecione da galeria para identificar o descarte correto.
-      </p>
+        <section className='scanner-content'>
+          <CameraCapture onCapture={analisarFrameComIA} busy={carregando} />
+          <p className='scanner-typing-hint'>Aponte a câmera para o objeto e toque em “Identificar objeto”.</p>
 
-      {/* Input oculto para câmera/galeria */}
-      <input 
-        type="file" 
-        accept="image/*" 
-        capture="environment" 
-        ref={fileInputRef} 
-        onChange={lidarComArquivo} 
-        style={{ display: 'none' }} 
-      />
+          {erro && <div className='scanner-error'>{erro}</div>}
 
-      {/* Área de Visualização da Foto */}
-      <div 
-        onClick={() => fileInputRef.current.click()}
-        style={{
-          width: '100%',
-          height: '260px',
-          border: '2px dashed #81c784',
-          borderRadius: '16px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          background: '#f1f8e9',
-          overflow: 'hidden',
-          position: 'relative'
-        }}
-      >
-        {imagemPreview ? (
-          <img src={imagemPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        ) : (
-          <div style={{ textAlign: 'center', padding: '20px' }}>
-            <span style={{ fontSize: '48px' }}>📷</span>
-            <p style={{ margin: '8px 0 0', fontWeight: 'bold', color: '#2e7d32' }}>Toque para abrir a câmera ou galeria</p>
-          </div>
-        )}
+          {resultado && <article className='scanner-result'>
+            <div className='scanner-result-emojis'>♻️ 🎉</div>
+            <span className='home-eyebrow'>RESULTADO DA ANÁLISE</span>
+            <h2>Material identificado!</h2>
+            <strong className='scanner-result-item'>{resultado.item}</strong>
+            <span className={`scanner-status ${resultado.reciclavel ? 'is-recyclable' : ''}`}><CheckCircle2 size={13} />{resultado.reciclavel ? resultado.categoria : 'Não reciclável'}</span>
+            <div className='scanner-points-award'>+{resultado.pontosSugeridos || 5} PONTOS CONCEDIDOS!</div>
+            <div className='scanner-instruction'><strong>Como preparar</strong><p>{resultado.instrucaoPreparo}</p></div>
+            <div className='scanner-bin' style={{ background: lixeiraInfo.bg, borderColor: lixeiraInfo.border, color: lixeiraInfo.texto }}>{lixeiraInfo.tag}</div>
+            <button className='auth-button auth-button-secondary scanner-confirm' onClick={iniciarNovoEscaneamento}><RefreshCw size={15} /> Escanear outro material</button>
+            <button className='auth-button auth-button-secondary scanner-confirm' onClick={() => navigate('/comprovar-descarte', { state: { resultado } })}>Vou descartar agora <ArrowRight size={15} /></button>
+          </article>}
+        </section>
       </div>
-
-      {erro && (
-        <div style={{ background: '#ffebee', color: '#c62828', padding: '10px', borderRadius: '8px', marginTop: '15px', fontSize: '14px', textAlign: 'center' }}>
-          {erro}
-        </div>
-      )}
-
-      {/* Botão de Análise */}
-      <button
-        onClick={analisarImagemComIA}
-        disabled={carregando || !arquivoImagem}
-        style={{
-          width: '100%',
-          padding: '14px',
-          marginTop: '16px',
-          background: carregando || !arquivoImagem ? '#a5d6a7' : '#2e7d32',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '10px',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          cursor: carregando || !arquivoImagem ? 'not-allowed' : 'pointer'
-        }}
-      >
-        {carregando ? 'Identificando com Inteligência Artificial...' : 'Analisar Resíduo ✨'}
-      </button>
-
-      {/* Card com o Resultado da IA */}
-      {resultado && (
-        <div style={{
-          marginTop: '24px',
-          padding: '20px',
-          borderRadius: '14px',
-          background: '#ffffff',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-          border: '1px solid #e0e0e0'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <h3 style={{ margin: 0, color: '#333' }}>{resultado.item}</h3>
-            <span style={{
-              background: resultado.reciclavel ? '#e8f5e9' : '#ffebee',
-              color: resultado.reciclavel ? '#2e7d32' : '#c62828',
-              padding: '4px 10px',
-              borderRadius: '20px',
-              fontSize: '12px',
-              fontWeight: 'bold'
-            }}>
-              {resultado.reciclavel ? 'RECICLÁVEL' : 'NÃO RECICLÁVEL'}
-            </span>
-          </div>
-
-          {/* Tag com a Cor da Lixeira */}
-          <div style={{
-            background: lixeiraInfo.bg,
-            color: lixeiraInfo.texto,
-            padding: '12px',
-            borderRadius: '8px',
-            fontWeight: 'bold',
-            textAlign: 'center',
-            marginBottom: '14px'
-          }}>
-            {lixeiraInfo.tag}
-          </div>
-
-          <div style={{ fontSize: '14px', color: '#555', marginBottom: '16px', lineHeight: '1.4' }}>
-            <strong>Como preparar para o descarte:</strong><br />
-            {resultado.instrucaoPreparo}
-          </div>
-
-          {/* Botão para ir para o Passo 3 */}
-          <button
-            onClick={() => navigate('/comprovar-descarte', { state: { resultado, imagemOriginal: imagemPreview } })}
-            style={{
-              width: '100%',
-              padding: '12px',
-              background: '#388e3c',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              fontWeight: 'bold',
-              cursor: 'pointer'
-            }}
-          >
-            Vou descartar agora (+5 Pontos) ➔
-          </button>
-        </div>
-      )}
-    </div>
+    </main>
   );
 }
